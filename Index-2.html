@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventory Audit</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg:#f3f4f6; --surface:#fff; --surface-2:#f9fafb;
+  --border:#e5e7eb; --border-strong:#d1d5db;
+  --text-primary:#111827; --text-secondary:#6b7280; --text-muted:#9ca3af;
+  --accent:#2563eb; --accent-light:#eff6ff; --accent-dark:#1d4ed8;
+  --green:#16a34a; --green-light:#f0fdf4; --green-border:#86efac;
+  --red:#dc2626; --red-light:#fef2f2; --red-border:#fca5a5;
+  --amber:#d97706; --amber-light:#fffbeb; --amber-border:#fde68a;
+  --purple:#7e22ce; --purple-light:#fdf4ff; --purple-border:#e9d5ff;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans Arabic',sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh;padding:20px 24px;font-size:14px;line-height:1.5;}
+.container{max-width:1100px;margin:0 auto;}
+
+/* ─── Login Screen ─── */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-overlay.hidden{display:none;}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.1);}
+.login-title{font-size:17px;font-weight:700;margin-bottom:4px;text-align:center;}
+.login-sub{font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:20px;}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.login-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;}
+.login-select{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:9px 11px;font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;width:100%;background:var(--surface);transition:border-color .15s;}
+.login-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.pin-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.pin-display{display:flex;gap:8px;justify-content:center;margin-bottom:10px;}
+.pin-dot{width:40px;height:40px;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--accent);transition:all .15s;}
+.pin-dot.filled{background:var(--accent-light);border-color:var(--accent);}
+.pin-dot.error{background:var(--red-light);border-color:var(--red);color:var(--red);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+.pin-key{padding:11px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text-primary);cursor:pointer;transition:all .12s;text-align:center;}
+.pin-key:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.pin-key.del{color:var(--red);font-size:13px;font-weight:700;background:var(--red-light);border-color:var(--red-border);}
+.pin-key.del:hover{background:var(--red);border-color:var(--red);color:#fff;}
+.btn-login{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;}
+.btn-login:hover{background:var(--accent-dark);}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;}
+.login-error{background:var(--red-light);border:1px solid var(--red-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--red);font-weight:600;text-align:center;display:none;margin-bottom:10px;}
+.login-error.visible{display:block;}
+
+/* ─── App Header ─── */
+.app-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;}
+.app-title{display:flex;align-items:center;gap:10px;}
+.app-icon{font-size:22px;}
+.app-title-text h1{font-size:15px;font-weight:700;line-height:1.2;}
+.app-title-text span{font-size:11px;color:var(--text-muted);}
+.app-header-btns{display:flex;align-items:center;gap:6px;}
+.hbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+.hbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.hbtn.active-user{border-color:var(--green);color:var(--green);background:var(--green-light);}
+.hbtn.ver-btn{border-color:#bfdbfe;color:#1d4ed8;background:#eff6ff;}
+.hbtn.settings-configured{border-color:var(--green);color:var(--green);background:var(--green-light);}
+
+/* ─── Changelog Modal ─── */
+.changelog-modal .modal{max-width:520px;max-height:80vh;display:flex;flex-direction:column;}
+.changelog-body{overflow-y:auto;padding:20px;}
+.cl-version{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.cl-ver-badge{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.cl-ver-date{font-size:12px;color:var(--text-muted);}
+.cl-items{list-style:none;display:flex;flex-direction:column;gap:5px;margin-bottom:16px;padding-right:4px;border-bottom:1px solid var(--border);padding-bottom:16px;}
+.cl-items:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.cl-item{display:flex;gap:8px;font-size:13px;}
+.cl-item-label{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+.cl-new{background:#f0fdf4;color:#15803d;}
+.cl-fix{background:#fef2f2;color:#dc2626;}
+.cl-change{background:#fffbeb;color:#92400e;}
+
+/* ─── Main Tabs (Segmented — Mix1 V2) ─── */
+.main-tabs-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.main-seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:10px;padding:4px;gap:3px;}
+.main-seg-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 32px;border-radius:7px;font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;border:none;background:transparent;transition:all .15s;min-width:130px;}
+.main-seg-btn .msb-icon{font-size:16px;}
+.main-seg-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,.3);}
+.main-seg-btn:not(.active):hover{background:var(--accent-light);color:var(--accent);}
+
+/* ─── Audit Log Tab ─── */
+.log-tab-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+
+/* filters collapsible */
+.log-filters-section{border-bottom:1px solid var(--border);}
+.log-filters-header{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;background:var(--surface-2);cursor:pointer;user-select:none;transition:background .12s;}
+.log-filters-header:hover{background:#f0f4f8;}
+.log-filters-title{font-size:12px;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:6px;}
+.log-filters-toggle{font-size:13px;color:var(--text-muted);transition:transform .25s;}
+.log-filters-toggle.open{transform:rotate(180deg);}
+.log-filters-body{padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
+.log-filters-body.collapsed{display:none;}
+.log-frow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.log-fg{display:flex;flex-direction:column;gap:3px;}
+.log-flabel{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;}
+.log-fsel,.log-finput{border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:6px 9px;font-family:inherit;font-size:12px;color:var(--text-primary);background:var(--surface);outline:none;height:32px;}
+.log-fsel:focus,.log-finput:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+.log-fsel.w-emp{min-width:140px;}
+.log-fsel.w-type{min-width:140px;}
+.log-fsel.w-count{min-width:110px;}
+.log-finput.w-date{width:138px;}
+.log-finput.w-search{flex:1;min-width:160px;}
+
+/* stats + refresh bar */
+.log-stats-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.log-refresh-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid var(--green-border);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:600;color:var(--green);background:var(--green-light);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.log-refresh-btn:hover{background:var(--green);color:#fff;}
+.log-stat-chip{font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;}
+.log-stat-chip strong{color:var(--text-primary);}
+.log-stat-chip.filtered strong{color:var(--accent);}
+.log-export-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1px solid var(--green-border);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:600;color:var(--green);background:var(--green-light);cursor:pointer;transition:all .15s;margin-right:auto;opacity:.5;pointer-events:none;}
+.log-export-btn.enabled{opacity:1;pointer-events:all;}
+.log-export-btn:hover{background:var(--green);color:#fff;}
+
+/* log list */
+.log-list-head{display:flex;align-items:center;gap:10px;padding:7px 16px;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.log-list-head input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--accent);}
+.log-list-head-lbl{font-size:11px;font-weight:600;color:var(--text-secondary);}
+.log-body{overflow-y:auto;max-height:600px;}
+.log-entry{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;transition:background .1s;}
+.log-entry:hover{background:var(--surface-2);}
+.log-entry.selected{background:var(--accent-light);}
+.log-cb{flex-shrink:0;padding-top:3px;}
+.log-cb input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--accent);}
+.log-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.log-dot-ok{background:var(--green);}
+.log-dot-adj-pos{background:var(--green);}
+.log-dot-adj-neg{background:var(--red);}
+.log-entry-content{flex:1;min-width:0;}
+.log-entry-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;}
+.log-sku-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);border:1px solid #bfdbfe;border-radius:4px;padding:1px 7px;}
+.log-type-badge{font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;}
+.log-type-ok{background:var(--green-light);color:var(--green);}
+.log-type-adj-pos{background:#f0fdf4;color:#15803d;}
+.log-type-adj-neg{background:var(--red-light);color:var(--red);}
+.log-emp-badge{font-size:11px;font-weight:600;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:1px 7px;}
+.log-count-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-light);border:1px solid var(--purple-border);border-radius:4px;padding:1px 7px;}
+.log-product-name{font-size:12px;color:var(--text-secondary);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-qty-change{font-size:11px;font-family:var(--font-mono);margin-bottom:2px;}
+.log-qty-pos{color:var(--green);}
+.log-qty-neg{color:var(--red);}
+.log-meta{font-size:11px;color:var(--text-muted);}
+.log-notes{font-size:11px;color:var(--text-secondary);font-style:italic;margin-top:2px;display:flex;align-items:flex-start;gap:4px;}
+.log-empty{padding:40px;text-align:center;color:var(--text-muted);font-size:13px;}
+
+/* ─── Search ─── */
+.search-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:12px;box-shadow:var(--shadow);}
+.search-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.tab-btn{flex:1;padding:10px;border:2px solid var(--border-strong);background:var(--surface-2);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.tab-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,.25);}
+.search-input-wrap{display:flex;align-items:center;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);transition:border-color .15s,box-shadow .15s;}
+.search-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.search-icon{padding:0 10px;color:var(--text-muted);font-size:15px;}
+#skuSearch{flex:1;border:none;outline:none;padding:10px 4px;font-family:inherit;font-size:13px;color:var(--text-primary);background:transparent;direction:rtl;}
+#skuSearch::placeholder{color:var(--text-muted);}
+.clear-btn{padding:0 10px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;display:none;align-items:center;}
+.clear-btn.visible{display:flex;}
+.dropdown-wrap{position:relative;}
+.dropdown-list{position:absolute;top:calc(100% + 5px);right:0;left:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:100;display:none;}
+.dropdown-list.open{display:block;}
+.dropdown-item{padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .1s;}
+.dropdown-item:last-child{border-bottom:none;}
+.dropdown-item:hover{background:var(--accent-light);}
+.item-sku{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);padding:2px 7px;border-radius:4px;white-space:nowrap;}
+.item-name{font-size:12px;color:var(--text-primary);flex:1;}
+.dropdown-loading,.dropdown-empty{padding:18px;text-align:center;color:var(--text-muted);font-size:12px;}
+.barcode-area{display:none;}
+.barcode-area.active{display:block;}
+.barcode-input-wrap{display:flex;align-items:center;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);transition:all .15s;}
+.barcode-input-wrap.scanning{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.1);}
+#barcodeInput{flex:1;border:none;outline:none;padding:10px 14px;font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:transparent;direction:rtl;}
+#barcodeInput::placeholder{font-family:'Noto Sans Arabic',sans-serif;color:var(--text-muted);}
+.barcode-icon{padding:0 14px;color:var(--text-muted);font-size:20px;}
+
+/* ─── Results ─── */
+#results{display:none;}
+#results.visible{display:block;}
+
+/* ─── Product Topbar ─── */
+.product-topbar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:background .2s,border-color .2s;}
+.product-topbar.status-active{background:#f0fdf4;border-color:#86efac;}
+.product-topbar.status-other{background:#fef2f2;border-color:#fca5a5;}
+.product-img-wrap{width:165px;height:165px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:56px;color:var(--text-muted);}
+.product-img-wrap img{width:100%;height:100%;object-fit:cover;}
+.product-main-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.product-name{font-size:14px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.product-links-row{display:flex;flex-direction:column;gap:3px;}
+.sku-link{display:inline-flex;align-items:center;gap:4px;text-decoration:none;width:fit-content;}
+.sku-pill{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);border:1px solid #bfdbfe;border-radius:5px;padding:3px 9px;transition:background .15s;}
+.sku-link:hover .sku-pill{background:#dbeafe;}
+.sku-arrow{font-size:11px;color:var(--text-muted);}
+.history-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);border:1px solid #bfdbfe;border-radius:5px;padding:3px 9px;text-decoration:none;width:fit-content;transition:background .15s;}
+.history-link:hover{background:#dbeafe;}
+.product-right-info{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.status-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.status-ACTIVE{background:var(--green-light);color:var(--green);}
+.status-OTHER{background:var(--red-light);color:var(--red);}
+.options-wrap{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}
+.option-pill{border-radius:5px;padding:2px 9px;font-size:11px;font-weight:600;border:1px solid;}
+.option-pill-shoe{background:#f0fdf4;color:#15803d;border-color:#bbf7d0;}
+.option-pill-color{background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff;}
+.option-pill-other{background:var(--bg);color:var(--text-secondary);border-color:var(--border);}
+.refresh-btn{display:none;align-items:center;gap:5px;padding:5px 11px;background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+
+/* ─── Stats Row ─── */
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center;box-shadow:var(--shadow);}
+.stat-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+.stat-value{font-size:28px;font-weight:700;line-height:1.1;margin:4px 0;font-variant-numeric:tabular-nums;}
+.stat-desc{font-size:11px;color:var(--text-muted);}
+.val-committed{color:var(--accent);}
+.val-available{color:var(--green);}
+.val-onhand{color:var(--text-primary);}
+.val-shelf{color:#92400e;font-size:40px !important;}
+
+/* ─── Audit Card ─── */
+.audit-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:10px;box-shadow:var(--shadow);}
+.audit-phase1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.audit-q-left{display:flex;flex-direction:column;gap:6px;flex:1;}
+.audit-q-text{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:7px;}
+.audit-info-box{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;display:flex;flex-direction:column;gap:7px;}
+.audit-info-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.audit-info-label{font-size:13px;font-weight:600;color:var(--text-secondary);}
+.audit-info-val{font-size:15px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;}
+.audit-emp-badge{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:3px 11px;}
+.audit-notes-row{font-size:13px;color:var(--text-secondary);padding-top:6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.audit-q-btns{display:flex;gap:8px;flex-shrink:0;}
+.btn-audit-ok{display:flex;align-items:center;gap:6px;padding:10px 22px;background:var(--green-light);color:var(--green);border:1.5px solid var(--green-border);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-audit-ok:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.btn-audit-ok:disabled{opacity:.5;cursor:not-allowed;}
+.btn-want-adjust{display:flex;align-items:center;gap:6px;padding:10px 22px;background:var(--surface-2);color:var(--text-secondary);border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-want-adjust:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+
+/* ─── Adjust Panel ─── */
+.adjust-panel{display:none;border-top:1px solid var(--border);margin-top:16px;padding-top:16px;}
+.adjust-panel.visible{display:block;}
+.adjust-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.adjust-panel-title{font-size:13px;font-weight:700;color:var(--text-primary);}
+.btn-back{display:flex;align-items:center;gap:4px;padding:4px 10px;background:transparent;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+.btn-back:hover{border-color:var(--text-secondary);color:var(--text-primary);}
+.adjust-body{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.adjust-field{display:flex;flex-direction:column;gap:5px;}
+.adjust-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;}
+.adjust-current-val{font-size:30px;font-weight:700;color:#92400e;font-variant-numeric:tabular-nums;line-height:1.1;}
+.delta-wrap{display:flex;align-items:center;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);overflow:hidden;transition:border-color .15s;}
+.delta-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.delta-btn{width:40px;height:42px;border:none;background:var(--surface-2);font-size:20px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:background .12s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.delta-btn:hover{background:var(--accent-light);color:var(--accent);}
+.delta-btn.minus:hover{background:var(--red-light);color:var(--red);}
+#deltaInput{width:80px;border:none;outline:none;padding:8px 6px;font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text-primary);text-align:center;background:transparent;}
+.preview-new{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;}
+.preview-new.positive{color:var(--green);}
+.preview-new.negative{color:var(--red);}
+.preview-new.zero{color:var(--text-muted);}
+.notes-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:200px;}
+.notes-input{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 11px;font-family:inherit;font-size:12px;color:var(--text-primary);outline:none;width:100%;transition:border-color .15s;direction:rtl;}
+.notes-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.btn-apply{display:flex;align-items:center;gap:6px;padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.btn-apply:hover{background:var(--accent-dark);}
+.btn-apply:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ─── Warning / Orders ─── */
+#warningBanner{display:none;background:#fef2f2;border:2px solid var(--red);border-radius:var(--radius-sm);padding:16px 20px;margin-bottom:10px;align-items:flex-start;gap:12px;}
+.warning-icon{font-size:22px;flex-shrink:0;margin-top:1px;}
+.warning-text{display:flex;flex-direction:column;gap:3px;}
+.warning-title{font-size:14px;font-weight:800;color:var(--red);}
+.warning-body{font-size:13px;font-weight:500;color:#7f1d1d;}
+.orders-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.orders-card-header{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background .12s;}
+.orders-card-header:hover{background:var(--surface-2);}
+.orders-header-right{display:flex;align-items:center;gap:10px;}
+.orders-card-title{font-size:13px;font-weight:600;color:var(--text-primary);}
+.orders-count-badge{background:var(--accent-light);color:var(--accent);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;}
+.orders-header-left{display:flex;align-items:center;gap:8px;}
+.orders-collapse-icon{font-size:18px;color:var(--text-secondary);transition:transform .25s;font-weight:700;line-height:1;}
+.orders-collapse-icon.open{transform:rotate(180deg);}
+.orders-body-wrap{display:block;}
+.orders-body-wrap.collapsed{display:none;}
+.orders-table{width:100%;border-collapse:collapse;}
+.orders-table th{padding:11px 14px;text-align:right;font-size:12px;font-weight:700;color:var(--text-primary);background:#e5e7eb;border-bottom:2px solid var(--border-strong);white-space:nowrap;}
+.orders-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.orders-table tr:last-child td{border-bottom:none;}
+.orders-table tr:hover td{background:#fafafa;}
+.order-name-link{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);text-decoration:none;direction:ltr;display:inline-block;}
+.order-name-link:hover{text-decoration:underline;}
+.order-date{color:var(--text-primary);font-size:13px;font-weight:600;font-family:var(--font-mono);}
+.qty-badge{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:6px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+.qty-unfulfilled{background:var(--accent-light);color:var(--accent);}
+.tags-cell{display:flex;flex-wrap:wrap;gap:3px;}
+.tag-pill{font-size:10px;font-weight:500;padding:2px 6px;border-radius:4px;background:var(--red-light);color:var(--red);border:1px solid var(--red-border);direction:ltr;}
+.pack-status{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;white-space:nowrap;}
+.pack-done{background:var(--red-light);color:var(--red);border:1px solid var(--red-border);}
+.pack-shelf{background:var(--green-light);color:var(--green);border:1px solid var(--green-border);}
+.exchange-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;background:var(--purple-light);color:var(--purple);border:1.5px solid var(--purple-border);white-space:nowrap;}
+.exchange-badge-none{color:var(--text-muted);font-size:12px;}
+.summary-row{background:var(--surface-2);border-top:1.5px solid var(--border-strong);}
+.summary-row td{padding:9px 14px;font-weight:700;font-size:12px;}
+.state-box{padding:36px 20px;text-align:center;color:var(--text-muted);}
+.state-icon{font-size:32px;margin-bottom:8px;}
+.state-box p{font-size:12px;}
+
+/* ─── Shared ─── */
+.loading-spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;transform:translateY(14px);transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+.modal-close-btn{background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:0 4px;}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.field-group{display:flex;flex-direction:column;gap:5px;}
+.field-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;}
+.field-input{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:9px 11px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);outline:none;width:100%;direction:ltr;transition:border-color .15s;}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.btn-save{padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
+.btn-save:hover{background:var(--accent-dark);}
+.btn-modal-cancel{padding:8px 14px;background:transparent;color:var(--text-secondary);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;cursor:pointer;}
+.btn-modal-cancel:hover{color:var(--text-primary);}
+.confirm-modal .modal-header{background:var(--surface-2);}
+.confirm-detail-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.confirm-detail-row:last-of-type{border-bottom:none;}
+.confirm-detail-label{font-size:12px;color:var(--text-secondary);}
+.confirm-detail-val{font-size:13px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums;}
+.confirm-detail-val.green{color:var(--green);}
+.confirm-detail-val.red{color:var(--red);}
+.confirm-detail-val.accent{color:var(--accent);}
+.confirm-note{font-size:12px;color:var(--text-secondary);background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border);margin-top:4px;}
+.btn-confirm-ok{padding:9px 20px;color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;}
+.btn-confirm-ok.green-btn{background:var(--green);}
+.btn-confirm-ok.green-btn:hover{background:#15803d;}
+.btn-confirm-ok.accent-btn{background:var(--accent);}
+.btn-confirm-ok.accent-btn:hover{background:var(--accent-dark);}
+.not-configured-banner{background:var(--amber-light);border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:9px 13px;font-size:12px;color:var(--amber);margin-bottom:12px;}
+.order-checkbox{width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;}
+.btn-fulfill{display:none;align-items:center;gap:6px;padding:5px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.btn-fulfill:hover{background:#15803d;}
+.btn-fulfill.visible{display:flex;}
+.btn-select-all{display:flex;align-items:center;gap:5px;padding:4px 10px;background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;}
+.btn-select-all:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.selected-count{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:10px;display:none;}
+.selected-count.visible{display:inline-block;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text-primary);color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:500;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--red);}
+.toast.success{background:var(--green);}
+</style>
+
+<body>
+
+<!-- ─── Login Screen ─────────────────────────────────────────────────────────── -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div style="display:flex;justify-content:flex-start;margin-bottom:4px;">
+      <button onclick="openSettingsFromLogin()" style="display:flex;align-items:center;gap:4px;padding:5px 10px;border:1px solid var(--border-strong);background:var(--surface-2);border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:600;color:var(--text-secondary);cursor:pointer;" id="loginSettingsBtn">⚙️ الإعدادات</button>
+    </div>
+    <div style="text-align:center;margin-bottom:10px;font-size:28px;">📦</div>
+    <div class="login-title">Inventory Audit</div>
+    <div class="login-sub" id="loginSub">أداة مراجعة وضبط الجرد</div>
+
+    <!-- ── الاسم + PIN في صفحة واحدة ── -->
+    <div id="stepMain">
+      <div class="login-field">
+        <label class="login-label">اختر اسمك</label>
+        <select class="login-select" id="loginUsername" onchange="onUsernameChange()">
+          <option value="">— اختر —</option>
+        </select>
+      </div>
+      <div class="pin-label" id="pinLabel" style="margin-top:6px;">أدخل الـ PIN</div>
+      <div class="pin-display" id="pinDisplay">
+        <div class="pin-dot" id="pd0">_</div>
+        <div class="pin-dot" id="pd1">_</div>
+        <div class="pin-dot" id="pd2">_</div>
+        <div class="pin-dot" id="pd3">_</div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="pinPress('1')">1</button>
+        <button class="pin-key" onclick="pinPress('2')">2</button>
+        <button class="pin-key" onclick="pinPress('3')">3</button>
+        <button class="pin-key" onclick="pinPress('4')">4</button>
+        <button class="pin-key" onclick="pinPress('5')">5</button>
+        <button class="pin-key" onclick="pinPress('6')">6</button>
+        <button class="pin-key" onclick="pinPress('7')">7</button>
+        <button class="pin-key" onclick="pinPress('8')">8</button>
+        <button class="pin-key" onclick="pinPress('9')">9</button>
+        <button class="pin-key del" onclick="pinPress('clear')">مسح</button>
+        <button class="pin-key" onclick="pinPress('0')">0</button>
+        <button class="pin-key del" onclick="pinPress('back')">←</button>
+      </div>
+      <div class="login-error" id="loginError">كلمة المرور خطأ — برجاء إعادة إدخال الكلمة الصحيحة</div>
+      <button class="btn-login" id="btnLogin" onclick="doLogin()" disabled>دخول</button>
+    </div>
+
+    <!-- ── تأكيد PIN (تسجيل أول مرة فقط) ── -->
+    <div id="stepConfirmPin" style="display:none;">
+      <div style="background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:#1d4ed8;font-weight:600;text-align:center;margin-bottom:12px;">أول مرة؟ أكّد الـ PIN مرة ثانية</div>
+      <div class="pin-label">تأكيد الـ PIN</div>
+      <div class="pin-display" id="pinDisplayConfirm">
+        <div class="pin-dot" id="cd0">_</div>
+        <div class="pin-dot" id="cd1">_</div>
+        <div class="pin-dot" id="cd2">_</div>
+        <div class="pin-dot" id="cd3">_</div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="confirmPinPress('1')">1</button>
+        <button class="pin-key" onclick="confirmPinPress('2')">2</button>
+        <button class="pin-key" onclick="confirmPinPress('3')">3</button>
+        <button class="pin-key" onclick="confirmPinPress('4')">4</button>
+        <button class="pin-key" onclick="confirmPinPress('5')">5</button>
+        <button class="pin-key" onclick="confirmPinPress('6')">6</button>
+        <button class="pin-key" onclick="confirmPinPress('7')">7</button>
+        <button class="pin-key" onclick="confirmPinPress('8')">8</button>
+        <button class="pin-key" onclick="confirmPinPress('9')">9</button>
+        <button class="pin-key del" onclick="confirmPinPress('clear')">مسح</button>
+        <button class="pin-key" onclick="confirmPinPress('0')">0</button>
+        <button class="pin-key del" onclick="confirmPinPress('back')">←</button>
+      </div>
+      <div class="login-error" id="confirmError">الـ PIN غير متطابق — حاول مرة أخرى</div>
+      <button class="btn-login" id="btnRegister" onclick="doRegister()" disabled>تأكيد وتسجيل الدخول</button>
+      <button style="width:100%;margin-top:8px;padding:8px;background:transparent;border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;color:var(--text-secondary);cursor:pointer;" onclick="backToMainStep()">← رجوع</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Settings Modal ────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="settingsOverlay" onclick="closeSettingsOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      ⚙️ الإعدادات
+      <button class="modal-close-btn" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Worker URL</label>
+        <input type="text" class="field-input" id="cfWorkerUrl" placeholder="https://inventory-audit-updater-worker.ecommoda-dev.workers.dev" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Worker Secret</label>
+        <input type="password" class="field-input" id="cfWorkerSecret" placeholder="••••••••••••" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Admin Worker URL</label>
+        <input type="text" class="field-input" id="cfAdminUrl" placeholder="https://ecommoda-admin-worker.ecommoda-dev.workers.dev" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Flow Companion Token</label>
+        <input type="password" class="field-input" id="cfFlowToken" placeholder="••••••••••••" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeSettings()">إلغاء</button>
+      <button class="btn-save" onclick="saveSettings()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Confirm Modal ─────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal confirm-modal">
+    <div class="modal-header" id="confirmHeader"></div>
+    <div class="modal-body" id="confirmBody"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" id="confirmCancelBtn">إلغاء</button>
+      <button class="btn-confirm-ok" id="confirmOkBtn">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Changelog Modal ───────────────────────────────────────────────────────── -->
+<div class="modal-overlay changelog-modal" id="changelogOverlay" onclick="closeChangelogOnBackdrop(event)">
+  <div class="modal" style="max-width:500px;max-height:80vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      📋 سجل التحديثات
+      <button class="modal-close-btn" onclick="closeChangelog()">✕</button>
+    </div>
+    <div class="changelog-body" style="overflow-y:auto;padding:20px;flex:1;">
+      <div class="cl-version">
+        <span class="cl-ver-badge">v2.1.0</span>
+        <span class="cl-ver-date">04-05-2026</span>
+      </div>
+      <ul class="cl-items">
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>سجل العمليات أصبح تاب مستقل بدلاً من Modal منبثق</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>فلتر نوع التعديل: زيادة ↑ / نقصان ↓ منفصلَين</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>فلتر عدد مرات الجرد لنفس الـ SKU (1–10 وأكثر من 10)</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>فلتر من تاريخ / إلى تاريخ</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>بحث في الملحوظات</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>Checkbox لتحديد عمليات وتصدير المحدد .xlsx</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>عرض إجمالي السجل ونتائج الفلتر الحالي</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>قسم الفلاتر قابل للطي Collapse</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>إخفاء سجلات الدخول والخروج من السجل</span></li>
+      </ul>
+      <div class="cl-version">
+        <span class="cl-ver-badge" style="background:#f9fafb;color:#6b7280;border-color:#d1d5db;">v2.0.0</span>
+        <span class="cl-ver-date">04-05-2026</span>
+      </div>
+      <ul class="cl-items">
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>نقل للحساب الجديد (ecommoda-dev) مع D1 logging</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>Universal Auth — قائمة الموظفين ديناميكية من Admin Worker</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>تسجيل دخول وخروج الموظفين في D1 logs</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>Admin Worker URL في الإعدادات</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>PIN يُرسَل في POST body — لا يظهر في الـ Network logs</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>سجل الجرد يُفلتَر على السيرفر (D1) — بدون حد أقصى</span></li>
+      </ul>
+      <div class="cl-version">
+        <span class="cl-ver-badge" style="background:#f9fafb;color:#6b7280;border-color:#d1d5db;">v1.3.0</span>
+        <span class="cl-ver-date">21-04-2026</span>
+      </div>
+      <ul class="cl-items">
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>الخط الأساسي من IBM Plex Sans Arabic إلى Noto Sans Arabic</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>حجم صورة المنتج أصبح 165×165px (+50%)</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>بيانات آخر جرد أكبر حجماً مع label "الملحوظات السابقة"</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>ملاحظة ثابتة تلقائية عند الجرد المظبوط</span></li>
+      </ul>
+      <div class="cl-version">
+        <span class="cl-ver-badge" style="background:#f9fafb;color:#6b7280;border-color:#d1d5db;">v1.2.0</span>
+        <span class="cl-ver-date">21-04-2026</span>
+      </div>
+      <ul class="cl-items">
+        <li class="cl-item"><span class="cl-item-label cl-change">تغيير</span><span>شاشة تسجيل الدخول في صفحة واحدة — اسم + PIN معاً</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>صوت beep عند PIN خطأ أو عدم تطابق التأكيد</span></li>
+        <li class="cl-item"><span class="cl-item-label cl-fix">إصلاح</span><span>نوع metafield الموظف متوافق مع Choice list في Shopify</span></li>
+      </ul>
+      <div class="cl-version">
+        <span class="cl-ver-badge" style="background:#f9fafb;color:#6b7280;border-color:#d1d5db;">v1.0.0</span>
+        <span class="cl-ver-date">13-04-2026</span>
+      </div>
+      <ul class="cl-items">
+        <li class="cl-item"><span class="cl-item-label cl-new">جديد</span><span>إصدار أولي — بحث بالـ SKU والباركود، عرض المخزون، جرد وتعديل، Unfulfilled Orders</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+
+  <!-- ─── App Header ────────────────────────────────────────────────────────── -->
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-icon">📦</div>
+      <div class="app-title-text">
+        <h1>Inventory Audit</h1>
+        <span>أداة مراجعة وضبط الجرد</span>
+      </div>
+    </div>
+    <div class="app-header-btns">
+      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.0 📋</button>
+      <button class="hbtn" id="activeUserBtn" onclick="doLogout()">👤 —</button>
+      <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
+    </div>
+  </div>
+
+  <!-- ─── Main Segmented Tabs ───────────────────────────────────────────────── -->
+  <div class="main-tabs-wrap">
+    <div class="main-seg">
+      <button class="main-seg-btn active" id="mainTabAudit" onclick="switchMainTab('audit')">
+        <span class="msb-icon">📦</span>
+        <span>الجرد</span>
+      </button>
+      <button class="main-seg-btn" id="mainTabLog" onclick="switchMainTab('log')">
+        <span class="msb-icon">📜</span>
+        <span>سجل العمليات</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Audit Tab Content ────────────────────────────────────────────────── -->
+  <div id="auditTabContent">
+
+  <!-- ─── Search Card ───────────────────────────────────────────────────────── -->
+  <div class="search-card" id="searchCard">
+    <div class="search-tabs">
+      <button class="tab-btn active" id="tabSku" onclick="switchTab('sku')">🔍 بحث بالـ SKU</button>
+      <button class="tab-btn" id="tabBarcode" onclick="switchTab('barcode')">🔫 مسح الباركود</button>
+    </div>
+    <div id="skuMode">
+      <div class="dropdown-wrap" id="dropdownWrap">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="skuSearch" placeholder="ابحث بكتابة (SKU) أو اسم المنتج ..." autocomplete="off" spellcheck="false" />
+          <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+        </div>
+        <div class="dropdown-list" id="dropdownList"></div>
+      </div>
+    </div>
+    <div id="barcodeMode" class="barcode-area">
+      <div class="barcode-input-wrap" id="barcodeWrap">
+        <span class="barcode-icon">🔫</span>
+        <input type="text" id="barcodeInput" placeholder="امسح الباركود هنا..." autocomplete="off" spellcheck="false" inputmode="numeric" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Results ──────────────────────────────────────────────────────────── -->
+  <div id="results">
+
+    <!-- Product Topbar -->
+    <div class="product-topbar" id="productTopbar">
+      <div class="product-img-wrap" id="productImgWrap">📦</div>
+      <div class="product-main-info">
+        <div class="product-name" id="productTitle">—</div>
+        <div class="product-links-row">
+          <a class="sku-link" id="productSkuLink" href="#" target="_blank">
+            <span class="sku-pill" id="productSkuDisplay">SKU: —</span>
+            <span class="sku-arrow">↗</span>
+          </a>
+          <a class="history-link" id="historyLink" href="#" target="_blank">📋 صفحة سجل التعديلات للمنتج ↗</a>
+        </div>
+      </div>
+      <div class="product-right-info">
+        <div id="productStatus"></div>
+        <div class="options-wrap" id="productOptions"></div>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshCurrent()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:10px;">
+      <div class="stat-card" style="flex:1.4;min-width:0;padding:16px 14px;border:2px solid #d97706;background:#fef9c3;">
+        <div class="stat-label" style="font-size:11px;">عدد القطع على الرف</div>
+        <div class="stat-value val-shelf" id="qtyShelf">—</div>
+        <div class="stat-desc">المتوقع عند الجرد</div>
+      </div>
+      <div style="font-size:26px;font-weight:300;color:var(--text-muted);padding:0 8px;flex-shrink:0;">=</div>
+      <div class="stat-card" style="flex:1;min-width:0;">
+        <div class="stat-label">Available</div>
+        <div class="stat-value val-available" id="qtyAvailable">—</div>
+        <div class="stat-desc">متاح للبيع</div>
+      </div>
+      <div style="font-size:26px;font-weight:300;color:var(--text-muted);padding:0 8px;flex-shrink:0;">+</div>
+      <div class="stat-card" style="flex:1.2;min-width:0;">
+        <div class="stat-label">Committed</div>
+        <div class="stat-value val-committed" id="qtyCommitted">—</div>
+        <div class="stat-desc" style="line-height:1.4;">إجمالي الأوردرات المطلوبة تحت التجهيز في المخزن</div>
+      </div>
+      <div style="font-size:26px;font-weight:300;color:var(--red);padding:0 8px;flex-shrink:0;">−</div>
+      <div class="stat-card" style="flex:1;min-width:0;">
+        <div class="stat-label">Packed</div>
+        <div class="stat-value" style="color:var(--red);" id="qtyPacked">—</div>
+        <div class="stat-desc">مغلف (بعيد عن الرف)</div>
+      </div>
+      <div style="font-size:32px;font-weight:200;color:var(--border-strong);padding:0 10px;flex-shrink:0;">|</div>
+      <div class="stat-card" style="flex:1;min-width:0;">
+        <div class="stat-label">On Hand</div>
+        <div class="stat-value val-onhand" id="qtyOnHand">—</div>
+        <div class="stat-desc">إجمالي المخزن</div>
+      </div>
+    </div>
+
+    <!-- Audit Card -->
+    <div class="audit-card" id="auditCard">
+      <div class="audit-phase1">
+        <div class="audit-q-left">
+          <div class="audit-q-text">🔎 هل عدد قطع الرف مظبوط؟</div>
+          <div class="audit-info-box" id="auditInfoBox" style="display:none;">
+            <div class="audit-info-row">
+              <span class="audit-info-label">📅 آخر جرد:</span>
+              <span class="audit-info-val" id="auditLastVal">—</span>
+            </div>
+            <div class="audit-info-row" id="auditEmpRow" style="display:none;">
+              <span class="audit-info-label">👤 الموظف:</span>
+              <span class="audit-emp-badge" id="auditEmpVal">—</span>
+            </div>
+            <div class="audit-notes-row" id="auditNotesRow" style="display:none;">
+              <span class="audit-info-label">📝 الملحوظات السابقة:</span>
+              <span id="auditNotesVal" style="font-size:13px;color:var(--text-primary);flex:1;">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="audit-q-btns">
+          <button class="btn-audit-ok" id="btnAuditOk" onclick="confirmAuditOk()">✅ الجرد مظبوط</button>
+          <button class="btn-want-adjust" onclick="showAdjustPanel()">🔧 أريد التعديل</button>
+        </div>
+      </div>
+
+      <div class="adjust-panel" id="adjustPanel">
+        <div class="adjust-panel-header">
+          <div class="adjust-panel-title">🔧 تعديل المخزون</div>
+          <button class="btn-back" onclick="hideAdjustPanel()">← رجوع</button>
+        </div>
+        <div class="adjust-body">
+          <div class="adjust-field">
+            <div class="adjust-label">عدد القطع على الرف</div>
+            <div class="adjust-current-val" id="adjustCurrentVal">—</div>
+          </div>
+          <div class="adjust-field">
+            <div class="adjust-label">&nbsp;</div>
+            <div class="delta-wrap">
+              <button class="delta-btn minus" onclick="stepDelta(-1)">−</button>
+              <input type="number" id="deltaInput" value="0" min="-9999" max="9999" oninput="updatePreview()" />
+              <button class="delta-btn" onclick="stepDelta(1)">+</button>
+            </div>
+          </div>
+          <div class="adjust-field">
+            <div class="adjust-label">الناتج الجديد</div>
+            <span class="preview-new zero" id="previewNew">—</span>
+          </div>
+        </div>
+        <div class="notes-field" style="margin-bottom:14px;">
+          <div class="adjust-label">ملاحظات (اختياري)</div>
+          <input type="text" class="notes-input" id="adjustNotes" placeholder="أضف ملاحظة على هذا التعديل..." maxlength="200" />
+        </div>
+        <div style="padding-bottom:2px;">
+          <button class="btn-apply" id="btnApplyAdjust" onclick="confirmAdjust()" disabled>✔ تعديل الكمية</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warning Banner -->
+    <div id="warningBanner">
+      <div class="warning-icon">🚨</div>
+      <div class="warning-text">
+        <div class="warning-title">تحذير مهم قبل الجرد</div>
+        <div class="warning-body">يجب التأكد من عدم وجود أوردرات مركونة على طاولة التحضير ولم يتم عمل سكان لها — وإلا ستكون نتيجة الجرد غير دقيقة</div>
+      </div>
+    </div>
+
+    <!-- Orders Loading -->
+    <div id="ordersLoading" style="display:none;text-align:center;padding:20px;">
+      <div class="loading-spinner"></div>
+      <p style="margin-top:8px;color:var(--text-muted);font-size:12px;">جاري تحميل الأوردرات...</p>
+    </div>
+
+    <!-- Orders Card -->
+    <div class="orders-card" id="ordersCard" style="display:none;">
+      <div class="orders-card-header" onclick="toggleOrders()">
+        <div class="orders-header-right">
+          <div class="orders-card-title">الأوردرات غير المشحونة (Unfulfilled)</div>
+          <div class="orders-count-badge" id="ordersCountBadge">0</div>
+        </div>
+        <div class="orders-header-left">
+          <span class="selected-count" id="selectedCount">0 محدد</span>
+          <button class="btn-select-all" id="btnSelectAll" onclick="event.stopPropagation();toggleSelectAll()" style="display:none;">تحديد الكل</button>
+          <button class="btn-fulfill" id="btnFulfill" onclick="event.stopPropagation();confirmFulfill()">✅ Fulfill Orders</button>
+          <span class="orders-collapse-icon" id="collapseIcon">▼</span>
+        </div>
+      </div>
+      <div class="orders-body-wrap collapsed" id="ordersBodyWrap">
+        <div id="ordersBody"></div>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+  </div><!-- /auditTabContent -->
+
+  <!-- ─── Log Tab Content ──────────────────────────────────────────────────── -->
+  <div id="logTabContent" style="display:none;">
+    <div class="log-tab-wrap">
+
+      <!-- Filters collapsible -->
+      <div class="log-filters-section">
+        <div class="log-filters-header" onclick="toggleLogFilters()">
+          <div class="log-filters-title">
+            <span>🔽</span>
+            <span>الفلاتر</span>
+          </div>
+          <span class="log-filters-toggle open" id="logFiltersToggleIcon">▲</span>
+        </div>
+        <div class="log-filters-body" id="logFiltersBody">
+          <!-- Row 1: employee, type, count, notes search -->
+          <div class="log-frow">
+            <div class="log-fg">
+              <span class="log-flabel">الموظف</span>
+              <select class="log-fsel w-emp" id="logFilterEmployee" onchange="onLogEmpFilterChange()">
+                <option value="">كل الموظفين</option>
+              </select>
+            </div>
+            <div class="log-fg">
+              <span class="log-flabel">نوع التعديل</span>
+              <select class="log-fsel w-type" id="logFilterType" onchange="onLogFilterChange()">
+                <option value="">كل العمليات</option>
+                <option value="ok">مظبوط فقط</option>
+                <option value="adj_pos">زيادة فقط ↑</option>
+                <option value="adj_neg">نقصان فقط ↓</option>
+              </select>
+            </div>
+            <div class="log-fg">
+              <span class="log-flabel">عدد مرات الجرد (SKU)</span>
+              <select class="log-fsel w-count" id="logFilterCount" onchange="onLogFilterChange()">
+                <option value="">الكل</option>
+                <option value="1">1 مرة</option>
+                <option value="2">2 مرة</option>
+                <option value="3">3 مرات</option>
+                <option value="4">4 مرات</option>
+                <option value="5">5 مرات</option>
+                <option value="6">6 مرات</option>
+                <option value="7">7 مرات</option>
+                <option value="8">8 مرات</option>
+                <option value="9">9 مرات</option>
+                <option value="10">10 مرات</option>
+                <option value="10+">أكثر من 10</option>
+              </select>
+            </div>
+          </div>
+          <!-- Row 2: date from, date to, sku/product search, notes search -->
+          <div class="log-frow">
+            <div class="log-fg">
+              <span class="log-flabel">من تاريخ</span>
+              <input type="date" class="log-finput w-date" id="logFilterDateFrom" onchange="onLogFilterChange()" />
+            </div>
+            <div class="log-fg">
+              <span class="log-flabel">إلى تاريخ</span>
+              <input type="date" class="log-finput w-date" id="logFilterDateTo" onchange="onLogFilterChange()" />
+            </div>
+            <div class="log-fg" style="flex:1;">
+              <span class="log-flabel">بحث بالـ SKU أو اسم المنتج</span>
+              <input type="text" class="log-finput w-search" id="logSearch" placeholder="ابحث بالـ SKU أو اسم المنتج..." oninput="onLogSearchInput()" />
+            </div>
+            <div class="log-fg" style="flex:1;">
+              <span class="log-flabel">بحث في الملحوظات</span>
+              <input type="text" class="log-finput w-search" id="logSearchNotes" placeholder="ابحث في الملحوظات..." oninput="onLogSearchInput()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats + refresh bar -->
+      <div class="log-stats-bar">
+        <button class="log-refresh-btn" onclick="loadLog()">↺ تحديث</button>
+        <div class="log-stat-chip">إجمالي السجل: <strong id="logTotalCount">—</strong></div>
+        <div class="log-stat-chip filtered">نتائج الفلتر: <strong id="logFilteredCount">—</strong></div>
+        <button class="log-export-btn" id="logExportBtn" onclick="exportSelectedLog()">⬇ تصدير المحدد .xlsx</button>
+      </div>
+
+      <!-- List header (select all) -->
+      <div class="log-list-head">
+        <input type="checkbox" id="logSelectAll" onchange="toggleLogSelectAll(this)" />
+        <span class="log-list-head-lbl">تحديد الكل</span>
+      </div>
+
+      <!-- Log entries -->
+      <div class="log-body" id="logBody">
+        <div class="log-empty">اضغط تحديث لتحميل السجل</div>
+      </div>
+
+    </div>
+  </div><!-- /logTabContent -->
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SHOP_DOMAIN  = '6c7e1a-53.myshopify.com';
+const LS_URL_KEY   = 'stockaudit_worker_url';
+const LS_SEC_KEY   = 'stockaudit_worker_secret';
+const LS_ADMIN_URL = 'admin_worker_url';   // مشترك بين كل الأدوات
+const LS_FLOW_KEY  = 'stockaudit_flow_token';
+
+let currentSku = null, currentVariant = null, currentShelfQty = null;
+let selectedOrderIds = new Set();
+let currentEmployee = null;  // { username, displayName } أو null
+let pinBuffer = '';
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+function getConfig() {
+  return {
+    url:       localStorage.getItem(LS_URL_KEY)   || '',
+    secret:    localStorage.getItem(LS_SEC_KEY)   || '',
+    adminUrl:  localStorage.getItem(LS_ADMIN_URL) || '',
+    flowToken: localStorage.getItem(LS_FLOW_KEY)  || '',
+  };
+}
+function isConfigured() {
+  const c = getConfig();
+  return c.url.startsWith('http') && c.secret.length > 0;
+}
+function updateSettingsBtn() {
+  document.getElementById('settingsBtn').classList.toggle('settings-configured', isConfigured());
+  const loginBtn = document.getElementById('loginSettingsBtn');
+  if (loginBtn) {
+    if (isConfigured()) {
+      loginBtn.style.borderColor = 'var(--green)';
+      loginBtn.style.color       = 'var(--green)';
+      loginBtn.style.background  = 'var(--green-light)';
+    } else {
+      loginBtn.style.borderColor = 'var(--red)';
+      loginBtn.style.color       = 'var(--red)';
+      loginBtn.style.background  = 'var(--red-light)';
+    }
+  }
+}
+
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+function openSettingsFromLogin() {
+  const c = getConfig();
+  document.getElementById('cfWorkerUrl').value    = c.url;
+  document.getElementById('cfWorkerSecret').value = c.secret;
+  document.getElementById('cfAdminUrl').value     = c.adminUrl;
+  document.getElementById('cfFlowToken').value    = c.flowToken;
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function openSettings() {
+  const c = getConfig();
+  document.getElementById('cfWorkerUrl').value    = c.url;
+  document.getElementById('cfWorkerSecret').value = c.secret;
+  document.getElementById('cfAdminUrl').value     = c.adminUrl;
+  document.getElementById('cfFlowToken').value    = c.flowToken;
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings()                  { document.getElementById('settingsOverlay').classList.remove('open'); }
+function closeSettingsOnBackdrop(e)       { if (e.target === document.getElementById('settingsOverlay')) closeSettings(); }
+function saveSettings() {
+  const url      = document.getElementById('cfWorkerUrl').value.trim();
+  const secret   = document.getElementById('cfWorkerSecret').value.trim();
+  const adminUrl = document.getElementById('cfAdminUrl').value.trim();
+  const flowToken= document.getElementById('cfFlowToken').value.trim();
+  if (!url || !secret) { showToast('الرجاء إدخال الـ URL والـ Secret', 'error'); return; }
+  localStorage.setItem(LS_URL_KEY,   url);
+  localStorage.setItem(LS_SEC_KEY,   secret);
+  if (adminUrl)   localStorage.setItem(LS_ADMIN_URL, adminUrl);
+  if (flowToken)  localStorage.setItem(LS_FLOW_KEY,  flowToken);
+  updateSettingsBtn();
+  closeSettings();
+  showToast('تم حفظ الإعدادات ✓', 'success');
+  loadEmployeesList(); // أعد تحميل الموظفين بعد حفظ الإعدادات
+}
+
+// ─── Changelog Modal ──────────────────────────────────────────────────────────
+function openChangelog()                  { document.getElementById('changelogOverlay').classList.add('open'); }
+function closeChangelog()                 { document.getElementById('changelogOverlay').classList.remove('open'); }
+function closeChangelogOnBackdrop(e)      { if (e.target === document.getElementById('changelogOverlay')) closeChangelog(); }
+
+// ─── Main Tab Switch ──────────────────────────────────────────────────────────
+function switchMainTab(tab) {
+  const isAudit = tab === 'audit';
+  document.getElementById('mainTabAudit').classList.toggle('active', isAudit);
+  document.getElementById('mainTabLog').classList.toggle('active', !isAudit);
+  document.getElementById('auditTabContent').style.display = isAudit ? 'block' : 'none';
+  document.getElementById('logTabContent').style.display   = isAudit ? 'none'  : 'block';
+  if (!isAudit && !logLoaded) loadLog();
+}
+
+// ─── Log Filters Collapse ─────────────────────────────────────────────────────
+let logFiltersOpen = true;
+function toggleLogFilters() {
+  logFiltersOpen = !logFiltersOpen;
+  document.getElementById('logFiltersBody').classList.toggle('collapsed', !logFiltersOpen);
+  document.getElementById('logFiltersToggleIcon').classList.toggle('open', logFiltersOpen);
+}
+
+// ─── Audit Log Tab ────────────────────────────────────────────────────────────
+let logLoaded  = false;
+let logAllData = [];       // كل البيانات المجلوبة
+let logSelectedIds = new Set();
+let logDebounce = null;
+
+function onLogFilterChange() {
+  // فلتر الموظف يستوجب re-fetch من السيرفر
+  // باقي الفلاتر client-side
+  if (!logLoaded) { loadLog(); return; }
+  applyLogFilters();
+}
+function onLogEmpFilterChange() { loadLog(); }
+function onLogSearchInput()  { clearTimeout(logDebounce); logDebounce = setTimeout(applyLogFilters, 300); }
+
+// بناء count map — كم مرة ظهر كل SKU في النتائج
+function buildSkuCountMap(entries) {
+  const map = {};
+  entries.forEach(e => {
+    if (e.sku) map[e.sku] = (map[e.sku] || 0) + 1;
+  });
+  return map;
+}
+
+async function loadLog() {
+  const body = document.getElementById('logBody');
+  body.innerHTML = '<div class="log-empty"><div class="loading-spinner"></div><p style="margin-top:8px;font-size:12px;">جاري التحميل...</p></div>';
+  document.getElementById('logTotalCount').textContent    = '—';
+  document.getElementById('logFilteredCount').textContent = '—';
+  try {
+    const cfg    = getConfig();
+    // نجلب كل السجل (بدون login/logout دائماً من السيرفر)
+    const params = new URLSearchParams({ action: 'get_logs', limit: '2000', exclude_types: 'login,logout' });
+    const emp    = document.getElementById('logFilterEmployee').value;
+    if (emp) params.set('employee', emp);
+
+    const res  = await fetch(`${cfg.url}?${params}`, { headers: { 'Authorization': `Bearer ${cfg.secret}` } });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'خطأ في جلب السجل');
+
+    logAllData = (data.entries || []).filter(e => e.type !== 'login' && e.type !== 'logout');
+    logLoaded  = true;
+    document.getElementById('logTotalCount').textContent = logAllData.length.toLocaleString('en-US');
+    applyLogFilters();
+  } catch (e) {
+    body.innerHTML = `<div class="log-empty">⚠️ ${e.message}</div>`;
+  }
+}
+
+function applyLogFilters() {
+  const type      = document.getElementById('logFilterType').value;
+  const countVal  = document.getElementById('logFilterCount').value;
+  const dateFrom  = document.getElementById('logFilterDateFrom').value;
+  const dateTo    = document.getElementById('logFilterDateTo').value;
+  const search    = document.getElementById('logSearch').value.trim().toLowerCase();
+  const searchN   = document.getElementById('logSearchNotes').value.trim().toLowerCase();
+
+  // بناء count map من كل السجل (بدون فلاتر) لعرض badge الجرد
+  const skuCountMap = buildSkuCountMap(logAllData);
+
+  let filtered = logAllData.filter(e => {
+    const etype = e.type || 'ok';
+    // فلتر نوع التعديل
+    if (type === 'ok'      && etype !== 'ok') return false;
+    if (type === 'adj_pos' && !(etype === 'adjustment' && (e.delta ?? 0) > 0)) return false;
+    if (type === 'adj_neg' && !(etype === 'adjustment' && (e.delta ?? 0) < 0)) return false;
+
+    // فلتر عدد مرات الجرد
+    if (countVal) {
+      const cnt = skuCountMap[e.sku] || 0;
+      if (countVal === '10+') { if (cnt <= 10) return false; }
+      else { if (cnt !== parseInt(countVal)) return false; }
+    }
+
+    // فلتر تاريخ
+    if (dateFrom || dateTo) {
+      const ts = e.timestamp ? e.timestamp.substring(0, 10) : '';
+      if (dateFrom && ts < dateFrom) return false;
+      if (dateTo   && ts > dateTo)   return false;
+    }
+
+    // بحث SKU / اسم
+    if (search) {
+      const skuMatch  = (e.sku           || '').toLowerCase().includes(search);
+      const nameMatch = (e.product_title || '').toLowerCase().includes(search);
+      if (!skuMatch && !nameMatch) return false;
+    }
+
+    // بحث ملحوظات
+    if (searchN && !(e.notes || '').toLowerCase().includes(searchN)) return false;
+
+    return true;
+  });
+
+  document.getElementById('logFilteredCount').textContent = filtered.length.toLocaleString('en-US');
+  renderLog(filtered, skuCountMap);
+}
+
+function renderLog(entries, skuCountMap) {
+  const body = document.getElementById('logBody');
+  logSelectedIds.clear();
+  updateLogExportBtn();
+  document.getElementById('logSelectAll').checked = false;
+
+  if (!entries.length) {
+    body.innerHTML = '<div class="log-empty">لا توجد نتائج تطابق الفلاتر المحددة</div>';
+    return;
+  }
+
+  body.innerHTML = entries.map((e, idx) => {
+    const type         = e.type || 'ok';
+    const sku          = e.sku          || null;
+    const productTitle = e.product_title || null;
+    const employee     = e.employee     || null;
+    const delta        = e.delta        ?? 0;
+    const valBefore    = e.value_before ?? 0;
+    const valAfter     = e.value_after  ?? 0;
+    const notes        = e.notes        || null;
+    const timestamp    = e.timestamp    || null;
+    const entryId      = e.id || idx;
+
+    // dot + badge
+    let dotClass, typeHtml;
+    if (type === 'ok') {
+      dotClass = 'log-dot-ok';
+      typeHtml = '<span class="log-type-badge log-type-ok">✅ مظبوط</span>';
+    } else if (type === 'adjustment') {
+      if (delta > 0) {
+        dotClass = 'log-dot-adj-pos';
+        typeHtml = `<span class="log-type-badge log-type-adj-pos">↑ +${delta.toLocaleString('en-US')}</span>`;
+      } else {
+        dotClass = 'log-dot-adj-neg';
+        typeHtml = `<span class="log-type-badge log-type-adj-neg">↓ ${delta.toLocaleString('en-US')}</span>`;
+      }
+    } else {
+      dotClass = '';
+      typeHtml = `<span class="log-type-badge" style="background:var(--bg);color:var(--text-muted);">${type}</span>`;
+    }
+
+    const skuCount   = sku ? (skuCountMap[sku] || 0) : 0;
+    const countBadge = sku ? `<span class="log-count-badge">× ${skuCount.toLocaleString('en-US')} جرد</span>` : '';
+    const skuHtml    = sku ? `<span class="log-sku-badge">${sku}</span>` : '';
+    const empHtml    = employee ? `<span class="log-emp-badge">👤 ${employee.replace(/_/g, ' ')}</span>` : '';
+    const titleHtml  = productTitle ? `<div class="log-product-name">${productTitle}</div>` : '';
+    const notesHtml  = notes ? `<div class="log-notes">📝 ${notes}</div>` : '';
+    const dateStr    = timestamp ? formatDateTime(timestamp) : '—';
+
+    let qtyHtml = '';
+    if (type === 'ok') {
+      qtyHtml = `<div class="log-qty-change log-qty-pos">عدد الرف: ${valBefore.toLocaleString('en-US')}</div>`;
+    } else if (type === 'adjustment') {
+      const cls = delta > 0 ? 'log-qty-pos' : 'log-qty-neg';
+      qtyHtml = `<div class="log-qty-change ${cls}">قبل: ${valBefore.toLocaleString('en-US')} → بعد: ${valAfter.toLocaleString('en-US')}</div>`;
+    }
+
+    return `<div class="log-entry" id="log-entry-${entryId}">
+      <div class="log-cb"><input type="checkbox" class="log-entry-cb" data-id="${entryId}" data-idx="${idx}" onchange="onLogCbChange(this)" /></div>
+      <div class="log-dot ${dotClass}"></div>
+      <div class="log-entry-content">
+        <div class="log-entry-top">${skuHtml}${typeHtml}${empHtml}${countBadge}</div>
+        ${titleHtml}
+        ${qtyHtml}
+        <div class="log-meta">${dateStr}</div>
+        ${notesHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Log Checkbox ─────────────────────────────────────────────────────────────
+function onLogCbChange(cb) {
+  const id = cb.dataset.id;
+  if (cb.checked) logSelectedIds.add(id); else logSelectedIds.delete(id);
+  updateLogExportBtn();
+  const allCbs = document.querySelectorAll('.log-entry-cb');
+  document.getElementById('logSelectAll').checked = allCbs.length > 0 && [...allCbs].every(c => c.checked);
+  document.getElementById(`log-entry-${id}`).classList.toggle('selected', cb.checked);
+}
+function toggleLogSelectAll(master) {
+  document.querySelectorAll('.log-entry-cb').forEach(cb => {
+    cb.checked = master.checked;
+    const id = cb.dataset.id;
+    if (master.checked) logSelectedIds.add(id); else logSelectedIds.delete(id);
+    document.getElementById(`log-entry-${id}`)?.classList.toggle('selected', master.checked);
+  });
+  updateLogExportBtn();
+}
+function updateLogExportBtn() {
+  const btn = document.getElementById('logExportBtn');
+  if (!btn) return;
+  const has = logSelectedIds.size > 0;
+  btn.classList.toggle('enabled', has);
+  btn.textContent = has ? `⬇ تصدير المحدد (${logSelectedIds.size}) .xlsx` : '⬇ تصدير المحدد .xlsx';
+}
+
+// ─── Log Export .xlsx ─────────────────────────────────────────────────────────
+function exportSelectedLog() {
+  if (logSelectedIds.size === 0) return;
+  const skuCountMap = buildSkuCountMap(logAllData);
+
+  // جمع الصفوف المحددة بنفس ترتيبها في الـ DOM
+  const cbs = [...document.querySelectorAll('.log-entry-cb')].filter(c => c.checked);
+  const rows = cbs.map(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    const e   = logAllData[idx];
+    if (!e) return null;
+    const type  = e.type || 'ok';
+    const delta = e.delta ?? 0;
+    let typeLabel = type === 'ok' ? 'مظبوط' : type === 'adjustment' ? (delta > 0 ? `زيادة +${delta}` : `نقصان ${delta}`) : type;
+    return {
+      'التاريخ والوقت': e.timestamp ? formatDateTime(e.timestamp) : '—',
+      'الموظف':         (e.employee || '').replace(/_/g, ' '),
+      'SKU':            e.sku || '—',
+      'المنتج':         e.product_title || '—',
+      'نوع العملية':    typeLabel,
+      'قبل':            e.value_before ?? '',
+      'بعد':            e.value_after  ?? '',
+      'التغيير':        delta || '',
+      'عدد مرات الجرد': e.sku ? (skuCountMap[e.sku] || 0) : '',
+      'الملاحظات':      e.notes || '',
+    };
+  }).filter(Boolean);
+
+  if (!rows.length) return;
+
+  // بناء CSV وتنزيله كـ xlsx بسيط عبر BOM trick
+  const headers = Object.keys(rows[0]);
+  const csvRows = [headers.join('\t'), ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join('\t'))];
+  const bom     = '\uFEFF';
+  const blob    = new Blob([bom + csvRows.join('\n')], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href = url;
+  a.download = `audit-log-${new Date().toISOString().substring(0,10)}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`تم تصدير ${rows.length} عملية ✓`, 'success');
+}
+
+// ─── Employees — Dynamic List ─────────────────────────────────────────────────
+async function loadEmployeesList() {
+  const adminUrl = localStorage.getItem(LS_ADMIN_URL);
+  if (!adminUrl) return;
+  try {
+    const res  = await fetch(`${adminUrl}?action=get_employees`);
+    const data = await res.json();
+    if (!data.ok || !data.employees) return;
+
+    // Login select
+    const loginSelect = document.getElementById('loginUsername');
+    loginSelect.innerHTML = '<option value="">— اختر —</option>';
+
+    // Log filter select
+    const logSelect = document.getElementById('logFilterEmployee');
+    logSelect.innerHTML = '<option value="">كل الموظفين</option>';
+
+    data.employees.forEach(emp => {
+      const o1 = document.createElement('option');
+      o1.value = emp.username; o1.textContent = emp.display_name;
+      loginSelect.appendChild(o1);
+
+      const o2 = o1.cloneNode(true);
+      logSelect.appendChild(o2);
+    });
+  } catch { /* فشل صامت */ }
+}
+
+// ─── Login ────────────────────────────────────────────────────────────────────
+let isNewUser = false;
+let firstPin  = '';
+let confirmPinBuffer = '';
+
+// beep صوت خطأ
+let _audioCtx = null;
+function getAudioCtx() {
+  if (!_audioCtx) { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+  if (_audioCtx.state === 'suspended') { _audioCtx.resume(); }
+  return _audioCtx;
+}
+function playErrorBeep() {
+  try {
+    const ctx = getAudioCtx();
+    const play = () => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle'; osc.frequency.value = 880; gain.gain.value = 0.70;
+      osc.start(); osc.stop(ctx.currentTime + 0.2);
+    };
+    if (ctx.state === 'suspended') { ctx.resume().then(play); } else { play(); }
+  } catch (e) {}
+}
+
+function resetPinDots(ids) {
+  ids.forEach(id => { const d = document.getElementById(id); d.textContent = '_'; d.classList.remove('filled', 'error'); });
+}
+function fillPinDot(ids, idx) {
+  const d = document.getElementById(ids[idx]); d.textContent = '●'; d.classList.add('filled');
+}
+
+// تغيير الاسم → تحقق فوري من D1
+function onUsernameChange() {
+  const username = document.getElementById('loginUsername').value;
+  pinBuffer = ''; firstPin = ''; confirmPinBuffer = '';
+  resetPinDots(['pd0', 'pd1', 'pd2', 'pd3']);
+  document.getElementById('loginError').classList.remove('visible');
+  document.getElementById('stepMain').style.display = 'block';
+  document.getElementById('stepConfirmPin').style.display = 'none';
+  document.getElementById('loginSub').textContent = 'أداة مراجعة وضبط الجرد';
+  document.getElementById('pinLabel').textContent = 'أدخل الـ PIN';
+  document.getElementById('btnLogin').textContent = 'دخول';
+  document.getElementById('btnLogin').disabled = true;
+  isNewUser = false;
+  if (!username || !isConfigured()) return;
+
+  // تحقق صامت من D1
+  const cfg = getConfig();
+  const u   = new URL(cfg.url);
+  u.searchParams.set('action', 'check_employee');
+  u.searchParams.set('username', username);
+  fetch(u.toString(), { headers: { 'Authorization': `Bearer ${cfg.secret}` } })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) return;
+      if (!data.exists || !data.isActive) return; // موظف غير موجود أو موقوف
+      isNewUser = !data.hasPin;
+      if (isNewUser) {
+        document.getElementById('loginSub').textContent = 'أول مرة؟ اختر PIN جديد من 4 أرقام';
+        document.getElementById('pinLabel').textContent = 'اختر PIN جديد';
+        document.getElementById('btnLogin').textContent = 'متابعة →';
+      }
+    })
+    .catch(() => {}); // فشل صامت
+}
+
+function pinPress(val) {
+  try { getAudioCtx(); } catch (e) {}
+  const ids = ['pd0', 'pd1', 'pd2', 'pd3'];
+  if (val === 'clear')      { pinBuffer = ''; resetPinDots(ids); }
+  else if (val === 'back')  { if (pinBuffer.length > 0) { pinBuffer = pinBuffer.slice(0, -1); const d = document.getElementById(ids[pinBuffer.length]); d.textContent = '_'; d.classList.remove('filled'); } }
+  else                      { if (pinBuffer.length < 4) { fillPinDot(ids, pinBuffer.length); pinBuffer += val; } }
+  document.getElementById('btnLogin').disabled = (pinBuffer.length !== 4 || !document.getElementById('loginUsername').value);
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value;
+  const pin      = pinBuffer;
+  if (!username || pin.length !== 4) return;
+
+  if (isNewUser) {
+    // انتقال لخطوة التأكيد
+    firstPin = pin;
+    confirmPinBuffer = '';
+    resetPinDots(['cd0', 'cd1', 'cd2', 'cd3']);
+    document.getElementById('confirmError').classList.remove('visible');
+    document.getElementById('btnRegister').disabled = true;
+    document.getElementById('stepMain').style.display = 'none';
+    document.getElementById('stepConfirmPin').style.display = 'block';
+    return;
+  }
+
+  // Login عادي — POST مع PIN في body
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = '⏳ جاري التحقق...';
+  try {
+    const cfg = getConfig();
+    const res = await fetch(`${cfg.url}?action=verify_employee`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${cfg.secret}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ username, pin }),
+    });
+    const data = await res.json();
+    if (data.ok && data.displayName) {
+      finishLogin(username, data.displayName);
+    } else {
+      playErrorBeep();
+      document.getElementById('loginError').classList.add('visible');
+      const ids = ['pd0', 'pd1', 'pd2', 'pd3'];
+      ids.forEach(id => document.getElementById(id).classList.add('error'));
+      setTimeout(() => {
+        pinBuffer = ''; resetPinDots(ids);
+        document.getElementById('loginError').classList.remove('visible');
+        btn.disabled = true; btn.textContent = 'دخول';
+      }, 1500);
+    }
+  } catch (e) { showToast('خطأ: ' + e.message, 'error'); btn.disabled = false; btn.textContent = 'دخول'; }
+}
+
+function confirmPinPress(val) {
+  try { getAudioCtx(); } catch (e) {}
+  const ids = ['cd0', 'cd1', 'cd2', 'cd3'];
+  if (val === 'clear')     { confirmPinBuffer = ''; resetPinDots(ids); }
+  else if (val === 'back') { if (confirmPinBuffer.length > 0) { confirmPinBuffer = confirmPinBuffer.slice(0, -1); const d = document.getElementById(ids[confirmPinBuffer.length]); d.textContent = '_'; d.classList.remove('filled'); } }
+  else                     { if (confirmPinBuffer.length < 4) { fillPinDot(ids, confirmPinBuffer.length); confirmPinBuffer += val; } }
+  document.getElementById('btnRegister').disabled = (confirmPinBuffer.length !== 4);
+}
+
+function backToMainStep() {
+  confirmPinBuffer = ''; firstPin = ''; pinBuffer = '';
+  resetPinDots(['pd0', 'pd1', 'pd2', 'pd3']);
+  resetPinDots(['cd0', 'cd1', 'cd2', 'cd3']);
+  document.getElementById('stepConfirmPin').style.display = 'none';
+  document.getElementById('stepMain').style.display = 'block';
+  document.getElementById('btnLogin').disabled = true;
+}
+
+async function doRegister() {
+  const username = document.getElementById('loginUsername').value;
+  if (confirmPinBuffer !== firstPin) {
+    playErrorBeep();
+    document.getElementById('confirmError').classList.add('visible');
+    const ids = ['cd0', 'cd1', 'cd2', 'cd3'];
+    ids.forEach(id => document.getElementById(id).classList.add('error'));
+    setTimeout(() => {
+      confirmPinBuffer = ''; resetPinDots(ids);
+      document.getElementById('confirmError').classList.remove('visible');
+      document.getElementById('btnRegister').disabled = true;
+    }, 1500);
+    return;
+  }
+  const btn = document.getElementById('btnRegister');
+  btn.disabled = true; btn.textContent = '⏳ جاري التسجيل...';
+  try {
+    // register_pin — POST مع PIN في body
+    const cfg = getConfig();
+    const res = await fetch(`${cfg.url}?action=register_pin`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${cfg.secret}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ username, pin: firstPin }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'فشل التسجيل');
+
+    showToast('تم تسجيل الـ PIN بنجاح ✓', 'success');
+
+    // بعد التسجيل — ادخل مباشرة عبر verify_employee
+    const res2 = await fetch(`${cfg.url}?action=verify_employee`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${cfg.secret}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ username, pin: firstPin }),
+    });
+    const data2 = await res2.json();
+    if (data2.ok && data2.displayName) {
+      finishLogin(username, data2.displayName);
+    } else {
+      throw new Error('التسجيل نجح لكن الدخول فشل — حاول مرة أخرى');
+    }
+  } catch (e) {
+    showToast('خطأ: ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = 'تأكيد وتسجيل الدخول';
+  }
+}
+
+function finishLogin(username, displayName) {
+  currentEmployee = { username, displayName };
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('activeUserBtn').textContent = '👤 ' + displayName;
+  document.getElementById('activeUserBtn').classList.add('active-user');
+  showToast('مرحباً ' + displayName, 'success');
+}
+
+async function doLogout() {
+  if (!confirm('تسجيل الخروج؟')) return;
+  // أرسل log_logout للـ Worker
+  if (currentEmployee) {
+    const cfg = getConfig();
+    const u   = new URL(cfg.url);
+    u.searchParams.set('action', 'log_logout');
+    u.searchParams.set('username', currentEmployee.username);
+    fetch(u.toString(), { headers: { 'Authorization': `Bearer ${cfg.secret}` } }).catch(() => {});
+  }
+  currentEmployee = null;
+  document.getElementById('activeUserBtn').textContent = '👤 —';
+  document.getElementById('activeUserBtn').classList.remove('active-user');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  pinBuffer = ''; firstPin = ''; confirmPinBuffer = ''; isNewUser = false;
+  resetPinDots(['pd0', 'pd1', 'pd2', 'pd3']);
+  resetPinDots(['cd0', 'cd1', 'cd2', 'cd3']);
+  document.getElementById('stepConfirmPin').style.display = 'none';
+  document.getElementById('stepMain').style.display = 'block';
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginSub').textContent = 'أداة مراجعة وضبط الجرد';
+  document.getElementById('pinLabel').textContent = 'أدخل الـ PIN';
+  document.getElementById('btnLogin').textContent = 'دخول';
+  document.getElementById('btnLogin').disabled = true;
+  document.getElementById('loginError').classList.remove('visible');
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── Date format — Cairo UTC+3, Latin numerals, same style as v1.x ───────────
+function toCairo(isoString) {
+  // تحويل يدوي لتوقيت القاهرة UTC+3 مع الحفاظ على أرقام لاتينية
+  return new Date(new Date(isoString).getTime() + 3 * 60 * 60 * 1000);
+}
+function formatDateTime(isoString) {
+  const d   = toCairo(isoString);
+  const pad = n => String(n).padStart(2, '0');
+  let h     = d.getUTCHours();
+  const m   = pad(d.getUTCMinutes());
+  const ampm= h >= 12 ? 'مساءً' : 'صباحاً';
+  h         = h % 12 || 12;
+  return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth()+1)}-${d.getUTCFullYear()} الساعة ${pad(h)}:${m} ${ampm}`;
+}
+function formatDate(isoString) {
+  const d   = toCairo(isoString);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth()+1)}-${d.getUTCFullYear()}`;
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function apiCall(params, method = 'GET', bodyObj = null) {
+  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة'); }
+  const { url: WU, secret: WS } = getConfig();
+  const u = new URL(WU);
+  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  const opts = { headers: { 'Authorization': `Bearer ${WS}` } };
+  if (method === 'POST' && bodyObj) {
+    opts.method = 'POST';
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(bodyObj);
+  }
+  const res  = await fetch(u.toString(), opts);
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || 'خطأ في الاتصال');
+  return data;
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+let searchDebounce = null, lastKeyTime = 0, barcodeTimeout = null;
+updateSettingsBtn();
+if (!isConfigured()) {
+  const b = document.createElement('div');
+  b.className = 'not-configured-banner';
+  b.textContent = '⚠ الأداة غير مضبوطة — افتح الإعدادات وأدخل الـ Worker URL والـ Secret';
+  document.getElementById('searchCard').prepend(b);
+}
+loadEmployeesList(); // تحميل الموظفين ديناميكياً
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+const skuSearch    = document.getElementById('skuSearch');
+const dropdownList = document.getElementById('dropdownList');
+const clearBtn     = document.getElementById('clearBtn');
+skuSearch.addEventListener('input', () => {
+  const val = skuSearch.value.trim();
+  clearBtn.classList.toggle('visible', val.length > 0);
+  clearTimeout(searchDebounce);
+  if (!val) { dropdownList.innerHTML = ''; dropdownList.classList.remove('open'); return; }
+  searchDebounce = setTimeout(() => loadSkus(val), 350);
+});
+skuSearch.addEventListener('focus', () => { if (skuSearch.value.trim()) loadSkus(skuSearch.value.trim()); });
+document.addEventListener('click', e => { if (!document.getElementById('dropdownWrap').contains(e.target)) dropdownList.classList.remove('open'); });
+function clearSearch() { skuSearch.value = ''; clearBtn.classList.remove('visible'); dropdownList.innerHTML = ''; dropdownList.classList.remove('open'); skuSearch.focus(); }
+
+async function loadSkus(search) {
+  dropdownList.innerHTML = '<div class="dropdown-loading"><div class="loading-spinner"></div></div>';
+  dropdownList.classList.add('open');
+  try { const data = await apiCall({ action: 'list_skus', search }); renderDropdown(data.variants); }
+  catch (e) { dropdownList.innerHTML = `<div class="dropdown-empty">⚠️ ${e.message}</div>`; }
+}
+function renderDropdown(variants) {
+  if (!variants.length) { dropdownList.innerHTML = '<div class="dropdown-empty">لا توجد نتائج</div>'; return; }
+  dropdownList.innerHTML = variants.map(v => `
+    <div class="dropdown-item" onclick="selectVariant(${JSON.stringify(v).replace(/"/g, '&quot;')})">
+      <span class="item-sku">${v.sku || '—'}</span>
+      <span class="item-name">${v.product?.title || ''} ${v.selectedOptions?.map(o => o.value).join(' / ') || ''}</span>
+    </div>`).join('');
+  dropdownList.classList.add('open');
+}
+function selectVariant(variant) {
+  currentSku = variant.sku; currentVariant = variant;
+  skuSearch.value = variant.sku; clearBtn.classList.add('visible');
+  dropdownList.classList.remove('open');
+  renderProductCard(variant); loadOrders(variant);
+}
+
+// ─── Barcode ──────────────────────────────────────────────────────────────────
+const barcodeInput = document.getElementById('barcodeInput');
+const barcodeWrap  = document.getElementById('barcodeWrap');
+barcodeInput.addEventListener('input', () => {
+  clearTimeout(barcodeTimeout); barcodeWrap.classList.add('scanning');
+  const now = Date.now(); const gap = now - lastKeyTime; lastKeyTime = now;
+  barcodeTimeout = setTimeout(handleBarcodeScan, gap < 80 ? 150 : 400);
+});
+function handleBarcodeScan() {
+  const val = barcodeInput.value.trim(); barcodeInput.value = ''; barcodeInput.focus();
+  barcodeWrap.classList.remove('scanning'); if (!val) return; lookupByBarcode(val);
+}
+async function lookupByBarcode(barcode) {
+  showToast('جاري البحث...', '');
+  try {
+    const data = await apiCall({ action: 'lookup_barcode', barcode });
+    if (!data.variant) { showToast('لا يوجد منتج بهذا الباركود', 'error'); return; }
+    showToast('تم العثور على المنتج', 'success');
+    currentVariant = data.variant; selectVariant(data.variant);
+    switchTab('sku'); skuSearch.value = data.variant.sku; clearBtn.classList.add('visible');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function switchTab(tab) {
+  document.getElementById('tabSku').classList.toggle('active', tab === 'sku');
+  document.getElementById('tabBarcode').classList.toggle('active', tab === 'barcode');
+  document.getElementById('skuMode').style.display = tab === 'sku' ? 'block' : 'none';
+  document.getElementById('barcodeMode').classList.toggle('active', tab === 'barcode');
+  if (tab === 'barcode') barcodeInput.focus();
+}
+
+// ─── Product Card ─────────────────────────────────────────────────────────────
+function renderProductCard(variant) {
+  currentVariant = variant;
+  document.getElementById('productTitle').textContent = variant.product?.title || '—';
+  document.getElementById('productSkuDisplay').textContent = 'SKU: ' + (variant.sku || '—');
+
+  const vid = (variant.id || '').split('/').pop();
+  const pid = (variant.product?.id || '').split('/').pop();
+  document.getElementById('productSkuLink').href = pid && vid ? `https://admin.shopify.com/store/6c7e1a-53/products/${pid}/variants/${vid}` : '#';
+
+  const iid = (variant.inventoryItem?.id || '').split('/').pop();
+  if (iid) {
+    document.getElementById('historyLink').href = `https://admin.shopify.com/store/6c7e1a-53/products/inventory/${iid}/inventory_history?location_id=98849620290`;
+  }
+
+  const imgWrap = document.getElementById('productImgWrap');
+  const imgUrl  = variant.product?.featuredImage?.url;
+  if (imgUrl) { imgWrap.innerHTML = `<img src="${imgUrl}" alt="${variant.product?.featuredImage?.altText || ''}" />`; }
+  else        { imgWrap.innerHTML = '📦'; }
+
+  const opts  = variant.selectedOptions || [];
+  const sizeN = ['shoe size', 'size', 'مقاس']; const colorN = ['color', 'colour', 'لون'];
+  document.getElementById('productOptions').innerHTML = opts
+    .filter(o => o.value !== 'Default Title')
+    .map(o => {
+      const k = o.name.toLowerCase();
+      let c = 'option-pill-other';
+      if (sizeN.some(n => k.includes(n)))  c = 'option-pill-shoe';
+      else if (colorN.some(n => k.includes(n))) c = 'option-pill-color';
+      return `<span class="option-pill ${c}">${o.name}: ${o.value}</span>`;
+    }).join('');
+
+  const status = variant.product?.status || '';
+  const labels = { ACTIVE: 'Active ✓', DRAFT: 'Draft', ARCHIVED: 'Archived', UNLISTED: 'Unlisted' };
+  const cls    = status === 'ACTIVE' ? 'status-ACTIVE' : 'status-OTHER';
+  document.getElementById('productStatus').innerHTML = `<span class="status-badge ${cls}">${labels[status] || status}</span>`;
+
+  const topbar = document.getElementById('productTopbar');
+  topbar.classList.remove('status-active', 'status-other');
+  topbar.classList.add(status === 'ACTIVE' ? 'status-active' : 'status-other');
+  document.getElementById('refreshBtn').style.display = 'flex';
+
+  const levels = variant.inventoryItem?.inventoryLevels?.nodes?.[0]?.quantities || [];
+  const getQty = n => { const q = levels.find(l => l.name === n)?.quantity; return q != null ? q : null; };
+  document.getElementById('qtyOnHand').textContent    = (getQty('on_hand')    ?? '—').toLocaleString?.('en-US') ?? '—';
+  document.getElementById('qtyAvailable').textContent = (getQty('available')  ?? '—').toLocaleString?.('en-US') ?? '—';
+  document.getElementById('qtyCommitted').textContent = (getQty('committed')  ?? '—').toLocaleString?.('en-US') ?? '—';
+  document.getElementById('qtyShelf').textContent = '—';
+  document.getElementById('qtyPacked').textContent = '—';
+
+  currentShelfQty = null;
+  hideAdjustPanel();
+  document.getElementById('auditInfoBox').style.display = 'none';
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('ordersCard').style.display = 'none';
+  document.getElementById('warningBanner').style.display = 'none';
+}
+
+// ─── isPacked ─────────────────────────────────────────────────────────────────
+function isItemPacked(tags, item, packingDateTime, earliestReturnDate) {
+  const hasPacked = tags.some(t => { const tl = t.toLowerCase().replace(/[\[\]]/g, ''); return tl === 'packed' || tl.startsWith('packed-') || tl.startsWith('packed by'); });
+  if (!hasPacked) return false;
+  if (!item.isExchange) return true;
+  if (!packingDateTime || !earliestReturnDate) return false;
+  return new Date(packingDateTime) > new Date(earliestReturnDate);
+}
+
+// ─── Adjust Panel ─────────────────────────────────────────────────────────────
+function showAdjustPanel() {
+  document.getElementById('adjustPanel').classList.add('visible');
+  document.getElementById('adjustCurrentVal').textContent = currentShelfQty != null ? currentShelfQty.toLocaleString('en-US') : '—';
+  document.getElementById('deltaInput').value = '0';
+  document.getElementById('adjustNotes').value = '';
+  updatePreview();
+}
+function hideAdjustPanel() { document.getElementById('adjustPanel').classList.remove('visible'); }
+function stepDelta(step) { const inp = document.getElementById('deltaInput'); inp.value = (parseInt(inp.value) || 0) + step; updatePreview(); }
+function updatePreview() {
+  const delta   = parseInt(document.getElementById('deltaInput').value) || 0;
+  const current = parseInt(document.getElementById('adjustCurrentVal').textContent.replace(/,/g, ''));
+  const previewEl = document.getElementById('previewNew');
+  const btnApply  = document.getElementById('btnApplyAdjust');
+  if (isNaN(current) || delta === 0) {
+    previewEl.textContent = isNaN(current) ? '—' : current.toLocaleString('en-US');
+    previewEl.className = 'preview-new zero'; btnApply.disabled = true; return;
+  }
+  const newVal = current + delta;
+  previewEl.textContent = newVal.toLocaleString('en-US');
+  previewEl.className = 'preview-new ' + (delta > 0 ? 'positive' : 'negative');
+  btnApply.disabled = false;
+}
+
+// ─── Confirm Modal ────────────────────────────────────────────────────────────
+function openConfirm(headerHTML, bodyHTML, okLabel, okClass, onConfirm) {
+  document.getElementById('confirmHeader').innerHTML = headerHTML;
+  document.getElementById('confirmBody').innerHTML   = bodyHTML;
+  const okBtn     = document.getElementById('confirmOkBtn');
+  const cancelBtn = document.getElementById('confirmCancelBtn');
+  const newOk     = okBtn.cloneNode(true);
+  const newCancel = cancelBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newOk, okBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  newOk.textContent = okLabel; newOk.className = 'btn-confirm-ok ' + okClass;
+  newOk.addEventListener('click', () => { document.getElementById('confirmOverlay').classList.remove('open'); onConfirm(); });
+  newCancel.addEventListener('click', () => { document.getElementById('confirmOverlay').classList.remove('open'); });
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function confirmAuditOk() {
+  if (!currentVariant) { showToast('لم يتم اختيار منتج', 'error'); return; }
+  const shelf    = currentShelfQty != null ? currentShelfQty.toLocaleString('en-US') : '—';
+  const empName  = currentEmployee?.displayName || '—';
+  const body = `
+    <div class="confirm-detail-row"><span class="confirm-detail-label">المنتج</span><span class="confirm-detail-val">${currentVariant.product?.title || '—'}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">SKU</span><span class="confirm-detail-val accent">${currentVariant.sku || '—'}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">الموظف</span><span class="confirm-detail-val accent">${empName}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">عدد القطع على الرف</span><span class="confirm-detail-val green">${shelf}</span></div>
+    <div class="confirm-note">سيتم تسجيل تاريخ ووقت الجرد واسم الموظف — بدون تعديل في الكمية.</div>`;
+  openConfirm('✅ تأكيد: الجرد مظبوط', body, 'تأكيد', 'green-btn', doAuditOk);
+}
+
+async function doAuditOk() {
+  const variantId = currentVariant.id;
+  const btn = document.getElementById('btnAuditOk');
+  btn.disabled = true; btn.textContent = '⏳ جاري التسجيل...';
+  try {
+    const data = await apiCall(
+      { action: 'set_audit_date' },
+      'POST',
+      {
+        variantId,
+        employee:     currentEmployee?.username    || '',
+        sku:          currentVariant.sku           || '',
+        productTitle: currentVariant.product?.title || '',
+        shelfQty:     currentShelfQty              || 0,
+      }
+    );
+    showToast('تم تسجيل الجرد ✓', 'success');
+    if (data.auditDate) updateAuditInfo(data.auditDate, currentEmployee?.username || '', '');
+  } catch (e) { showToast('خطأ: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '✅ الجرد مظبوط'; }
+}
+
+function confirmAdjust() {
+  const delta  = parseInt(document.getElementById('deltaInput').value) || 0;
+  const notes  = document.getElementById('adjustNotes').value.trim();
+  if (delta === 0)   { showToast('التعديل يجب أن يكون غير صفر', 'error'); return; }
+  if (!currentVariant) { showToast('لم يتم اختيار منتج', 'error'); return; }
+  const current   = currentShelfQty != null ? currentShelfQty : 0;
+  const newVal    = current + delta;
+  const deltaStr  = (delta > 0 ? '+' : '') + delta.toLocaleString('en-US');
+  const deltaClass = delta > 0 ? 'green' : 'red';
+  const empName   = currentEmployee?.displayName || '—';
+  const body = `
+    <div class="confirm-detail-row"><span class="confirm-detail-label">المنتج</span><span class="confirm-detail-val">${currentVariant.product?.title || '—'}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">SKU</span><span class="confirm-detail-val accent">${currentVariant.sku || '—'}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">الموظف</span><span class="confirm-detail-val accent">${empName}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">عدد القطع على الرف</span><span class="confirm-detail-val">${current.toLocaleString('en-US')}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">التعديل</span><span class="confirm-detail-val ${deltaClass}">${deltaStr}</span></div>
+    <div class="confirm-detail-row"><span class="confirm-detail-label">الكمية الجديدة (Available)</span><span class="confirm-detail-val ${delta > 0 ? 'green' : 'red'}">${newVal.toLocaleString('en-US')}</span></div>
+    ${notes ? `<div class="confirm-detail-row"><span class="confirm-detail-label">ملاحظات</span><span class="confirm-detail-val" style="font-size:12px;">${notes}</span></div>` : ''}
+    <div class="confirm-note">سيتم تطبيق التعديل على الـ Available في Shopify وتسجيل تاريخ الجرد والموظف تلقائياً.</div>`;
+  openConfirm('🔧 تأكيد تعديل الكمية', body, 'تطبيق التعديل', 'accent-btn', doApplyAdjust);
+}
+
+async function doApplyAdjust() {
+  const delta           = parseInt(document.getElementById('deltaInput').value) || 0;
+  const notes           = document.getElementById('adjustNotes').value.trim();
+  const inventoryItemId = currentVariant.inventoryItem?.id;
+  const variantId       = currentVariant.id;
+  if (!inventoryItemId) { showToast('لا يوجد inventoryItem ID', 'error'); return; }
+  const btn      = document.getElementById('btnApplyAdjust');
+  const btnAudit = document.getElementById('btnAuditOk');
+  btn.disabled = true; btnAudit.disabled = true; btn.textContent = '⏳ جاري التعديل...';
+  try {
+    const data = await apiCall(
+      { action: 'adjust_inventory' },
+      'POST',
+      {
+        inventoryItemId, variantId, delta,
+        employee:     currentEmployee?.username     || '',
+        notes,
+        sku:          currentVariant.sku            || '',
+        productTitle: currentVariant.product?.title || '',
+        shelfBefore:  currentShelfQty              || 0,
+      }
+    );
+    showToast(`تم التعديل بنجاح (${delta > 0 ? '+' : ''}${delta}) ✓`, 'success');
+    if (data.auditDate) updateAuditInfo(data.auditDate, currentEmployee?.username || '', notes);
+    await refreshCurrent(); hideAdjustPanel();
+  } catch (e) {
+    showToast('خطأ: ' + e.message, 'error');
+    btn.disabled = false;
+  } finally {
+    btnAudit.disabled = false; btn.textContent = '✔ تعديل الكمية';
+  }
+}
+
+function updateAuditInfo(isoString, employee, notes) {
+  document.getElementById('auditLastVal').textContent = formatDateTime(isoString);
+  const empRow = document.getElementById('auditEmpRow');
+  if (employee) { document.getElementById('auditEmpVal').textContent = employee.replace(/_/g, ' '); empRow.style.display = 'flex'; }
+  else          { empRow.style.display = 'none'; }
+  const notesRow = document.getElementById('auditNotesRow');
+  if (notes) { document.getElementById('auditNotesVal').textContent = notes; notesRow.style.display = 'block'; }
+  else        { notesRow.style.display = 'none'; }
+  document.getElementById('auditInfoBox').style.display = 'flex';
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+let ordersCollapsed = false;
+function toggleOrders() {
+  ordersCollapsed = !ordersCollapsed;
+  document.getElementById('ordersBodyWrap').classList.toggle('collapsed', ordersCollapsed);
+  document.getElementById('collapseIcon').classList.toggle('open', !ordersCollapsed);
+}
+
+async function refreshCurrent() {
+  if (!currentSku) return;
+  try {
+    const data    = await apiCall({ action: 'list_skus', search: currentSku });
+    const variant = (data.variants || []).find(v => v.sku === currentSku);
+    if (variant) { currentVariant = variant; renderProductCard(variant); loadOrders(variant); }
+    else showToast('لم يتم العثور على الـ SKU', 'error');
+  } catch (e) { showToast('خطأ في التحديث: ' + e.message, 'error'); }
+}
+
+async function loadOrders(variant) {
+  document.getElementById('ordersLoading').style.display = 'block';
+  document.getElementById('ordersCard').style.display = 'none';
+  ordersCollapsed = true;
+  document.getElementById('ordersBodyWrap').classList.add('collapsed');
+  document.getElementById('collapseIcon').classList.remove('open');
+  try {
+    const [ordersData] = await Promise.all([
+      apiCall({ action: 'get_details', variantId: variant.id, productId: variant.product?.id }),
+      loadAuditDate(),
+    ]);
+    renderOrders(ordersData.orders);
+  } catch (e) {
+    document.getElementById('ordersLoading').style.display = 'none';
+    showToast('خطأ في تحميل الأوردرات: ' + e.message, 'error');
+  }
+}
+
+async function loadAuditDate() {
+  if (!currentVariant) return;
+  try {
+    const data = await apiCall({ action: 'get_audit_date', variantId: currentVariant.id });
+    if (data.auditDate) {
+      updateAuditInfo(data.auditDate, data.auditEmployee || '', data.auditNotes || '');
+    } else {
+      document.getElementById('auditLastVal').textContent = 'لا يوجد تاريخ مسجّل';
+      document.getElementById('auditInfoBox').style.display = 'flex';
+      document.getElementById('auditEmpRow').style.display = 'none';
+      document.getElementById('auditNotesRow').style.display = 'none';
+    }
+  } catch {
+    document.getElementById('auditLastVal').textContent = '—';
+    document.getElementById('auditInfoBox').style.display = 'flex';
+  }
+}
+
+function renderOrders(orders) {
+  document.getElementById('ordersLoading').style.display = 'none';
+  const card = document.getElementById('ordersCard'); card.style.display = 'block';
+  document.getElementById('ordersCountBadge').textContent = orders.length;
+  const body = document.getElementById('ordersBody');
+
+  selectedOrderIds.clear(); updateFulfillBtn();
+
+  if (!orders.length) {
+    body.innerHTML = `<div class="state-box"><div class="state-icon">✅</div><p>لا توجد أوردرات Unfulfilled لهذا الـ SKU</p></div>`;
+    document.getElementById('warningBanner').style.display = 'none';
+    document.getElementById('btnSelectAll').style.display  = 'none';
+    const available = parseInt(document.getElementById('qtyAvailable').textContent.replace(/,/g, '')) || 0;
+    currentShelfQty = available;
+    document.getElementById('qtyShelf').textContent = available.toLocaleString('en-US');
+    document.getElementById('qtyPacked').textContent = '0';
+    return;
+  }
+
+  document.getElementById('btnSelectAll').style.display = 'flex';
+
+  let totalUnfulfilled = 0, packedQty = 0, unpackedCommitted = 0;
+
+  const rows = orders.map(order => {
+    const { tags = [], packingDateTime = null, earliestReturnDate = null } = order;
+    const unf = order.items.reduce((s, i) => s + i.unfulfilledQuantity, 0);
+    totalUnfulfilled += unf;
+
+    for (const item of order.items) {
+      if (isItemPacked(tags, item, packingDateTime, earliestReturnDate)) packedQty += item.unfulfilledQuantity;
+      else unpackedCommitted += item.unfulfilledQuantity;
+    }
+
+    const date     = formatDate(order.createdAt);
+    const orderId  = order.id.split('/').pop();
+    const packedTags = tags.filter(t => { const tl = t.toLowerCase().replace(/[\[\]]/g, ''); return tl === 'packed' || tl.startsWith('packed-') || tl.startsWith('packed by'); });
+    const tagsHtml   = packedTags.length ? packedTags.map(t => `<span class="tag-pill">${t}</span>`).join('') : `<span style="color:var(--text-muted);font-size:11px;">—</span>`;
+
+    const firstItem  = order.items[0];
+    const itemPacked = isItemPacked(tags, firstItem, packingDateTime, earliestReturnDate);
+    const packHtml   = itemPacked ? `<span class="pack-status pack-done">🔴 تم التغليف</span>` : `<span class="pack-status pack-shelf">🟢 على الرف</span>`;
+    const hasExchange = order.items.some(i => i.isExchange);
+    const exchangeHtml = hasExchange ? `<span class="exchange-badge">🔄 استبدال</span>` : `<span class="exchange-badge-none">—</span>`;
+
+    return `<tr>
+      <td style="text-align:center;padding:10px;">
+        <input type="checkbox" class="order-checkbox" data-orderid="${orderId}" onchange="onCheckboxChange(this)" />
+      </td>
+      <td><a class="order-name-link" href="https://${SHOP_DOMAIN}/admin/orders/${orderId}" target="_blank">${order.name}</a></td>
+      <td><span class="order-date">${date}</span></td>
+      <td style="text-align:center;"><span class="qty-badge qty-unfulfilled">${unf.toLocaleString('en-US')}</span></td>
+      <td style="text-align:center;">${exchangeHtml}</td>
+      <td><div class="tags-cell">${tagsHtml}</div></td>
+      <td>${packHtml}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<table class="orders-table">
+    <thead><tr>
+      <th style="width:40px;"></th>
+      <th>رقم الأوردر</th><th>التاريخ</th>
+      <th style="text-align:center;">عدد القطع غير مشحونة</th>
+      <th style="text-align:center;">منتج استبدال</th>
+      <th>تاجات التغليف</th><th>تغليف الأوردر</th>
+    </tr></thead>
+    <tbody>${rows}
+      <tr class="summary-row">
+        <td></td><td colspan="5">الإجمالي (${orders.length} أوردر)</td>
+        <td style="text-align:center;"><span class="qty-badge qty-unfulfilled">${totalUnfulfilled.toLocaleString('en-US')}</span></td>
+      </tr>
+    </tbody></table>`;
+
+  const available = parseInt(document.getElementById('qtyAvailable').textContent.replace(/,/g, '')) || 0;
+  currentShelfQty = available + unpackedCommitted;
+  document.getElementById('qtyShelf').textContent  = currentShelfQty.toLocaleString('en-US');
+  document.getElementById('qtyPacked').textContent = packedQty > 0 ? '-' + packedQty.toLocaleString('en-US') : '0';
+  document.getElementById('warningBanner').style.display = 'flex';
+}
+
+// ─── Fulfill ──────────────────────────────────────────────────────────────────
+function onCheckboxChange(checkbox) {
+  const orderId = checkbox.dataset.orderid;
+  if (checkbox.checked) selectedOrderIds.add(orderId); else selectedOrderIds.delete(orderId);
+  updateFulfillBtn();
+}
+function updateFulfillBtn() {
+  const count   = selectedOrderIds.size;
+  const btn     = document.getElementById('btnFulfill');
+  const counter = document.getElementById('selectedCount');
+  btn.classList.toggle('visible', count > 0); counter.classList.toggle('visible', count > 0);
+  if (count > 0) { counter.textContent = count + ' محدد'; btn.textContent = `✅ Fulfill (${count})`; }
+}
+function toggleSelectAll() {
+  const checkboxes = document.querySelectorAll('.order-checkbox');
+  const allChecked = [...checkboxes].every(c => c.checked);
+  checkboxes.forEach(c => { c.checked = !allChecked; const oid = c.dataset.orderid; if (!allChecked) selectedOrderIds.add(oid); else selectedOrderIds.delete(oid); });
+  document.getElementById('btnSelectAll').textContent = allChecked ? 'تحديد الكل' : 'إلغاء التحديد';
+  updateFulfillBtn();
+}
+function confirmFulfill() {
+  if (selectedOrderIds.size === 0) return;
+  const { flowToken } = getConfig();
+  if (!flowToken) { showToast('الرجاء إدخال Flow Token في الإعدادات', 'error'); openSettings(); return; }
+  const orderList = [...selectedOrderIds].map(id => `<div style="font-family:monospace;font-size:12px;color:var(--accent);">#${id}</div>`).join('');
+  const body = `
+    <div class="confirm-detail-row"><span class="confirm-detail-label">عدد الأوردرات</span><span class="confirm-detail-val green">${selectedOrderIds.size}</span></div>
+    <div style="margin:10px 0 4px;font-size:11px;color:var(--text-secondary);font-weight:600;">الأوردرات المحددة:</div>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;">${orderList}</div>
+    <div class="confirm-note">سيتم إرسال trigger لـ Flow Companion لكل أوردر — تأكد إن الـ Flow مضبوط على specifier: FULFILL</div>`;
+  openConfirm('✅ تأكيد Fulfill Orders', body, 'تأكيد وإرسال', 'green-btn', doFulfillOrders);
+}
+async function doFulfillOrders() {
+  const { flowToken } = getConfig(); const orderIds = [...selectedOrderIds];
+  const btn = document.getElementById('btnFulfill');
+  btn.disabled = true; btn.textContent = '⏳ جاري الإرسال...';
+  let successCount = 0, failCount = 0;
+  for (const orderId of orderIds) {
+    try {
+      const res = await fetch('https://flow-companion.mivicle.app/rest/1/flow/start/order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bearerToken: flowToken, itemId: orderId, specifier: 'FULFILL' }),
+      });
+      if (res.ok) successCount++; else { console.error(`Order ${orderId} failed:`, res.status); failCount++; }
+    } catch (e) { console.error(`Order ${orderId} error:`, e); failCount++; }
+  }
+  btn.disabled = false; updateFulfillBtn();
+  if (failCount === 0) {
+    showToast(`تم إرسال ${successCount} أوردر بنجاح ✓`, 'success');
+    selectedOrderIds.clear(); document.querySelectorAll('.order-checkbox').forEach(c => c.checked = false);
+    document.getElementById('btnSelectAll').textContent = 'تحديد الكل'; updateFulfillBtn();
+  } else { showToast(`نجح ${successCount} / فشل ${failCount}. راجع الـ Console`, 'error'); }
+}
+</script>
+</body>
+</html>
