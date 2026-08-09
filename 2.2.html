@@ -296,7 +296,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
     <div class="app-header-btns">
       <button class="hbtn active-user" id="userBtn" onclick="doLogout()" style="display:none;"></button>
       <button class="hbtn" id="aboutBtn" onclick="openAbout()">ℹ️ عن الأداة</button>
-      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.1 📋</button>
+      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.2 📋</button>
       <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
     </div>
   </div>
@@ -477,7 +477,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
     <div class="changelog-body">
       <div class="cl-version-block">
         <div class="cl-version-row">
-          <span class="cl-ver-badge">v2.1.1</span>
+          <span class="cl-ver-badge">v2.1.2</span>
+          <span class="cl-ver-date">09-08-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span>صندوق رسالة الخطأ (loginAlert) كان جوه pin-zone المخفية قبل اختيار موظف — أي خطأ في تحميل قائمة الموظفين (CORS/الشبكة/إلخ) كان بيتكتب في عنصر مخفي ومايظهرش. اتنقل بره الـ pin-zone عشان يظهر دايماً</li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v2.1.1</span>
           <span class="cl-ver-date">09-08-2026</span>
         </div>
         <ul class="cl-items">
@@ -703,6 +712,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
         <div class="login-status warn" id="loginStatus">الإعدادات غير مكتملة — افتح الإعدادات أولاً.</div>
       </div>
 
+      <div class="login-alert" id="loginAlert"></div>
+
       <div class="pin-zone" id="pinZone">
         <div class="pin-label" id="pinLabel">أدخل الـ PIN</div>
         <div class="pin-slots" id="pinSlots">
@@ -725,7 +736,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <button class="pin-key" onclick="pressPinKey('0')">0</button>
           <button class="pin-key utility" onclick="pressPinKey('back')">←</button>
         </div>
-        <div class="login-alert" id="loginAlert"></div>
         <button class="login-primary visible" id="loginPrimaryBtn" onclick="handlePrimaryLoginAction()" disabled>دخول</button>
         <button class="login-secondary" id="loginSecondaryBtn" onclick="restartNewPinFlow()">الرجوع لإدخال PIN جديد</button>
       </div>
