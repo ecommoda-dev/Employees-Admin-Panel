@@ -138,7 +138,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .loading-spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
 
 /* ─── Generic Modals (Add/Edit/Confirm) ─── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
 .overlay.open{opacity:1;pointer-events:all;}
 .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;transform:translateY(14px);transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
 .overlay.open .modal{transform:translateY(0);}
@@ -167,7 +167,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .modal-error.visible{display:block;}
 
 /* ─── Settings Modal ─── */
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
 .settings-overlay.open{display:flex;}
 .settings-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:modalIn .2s ease;overflow:hidden;}
 @keyframes modalIn{from{transform:scale(.95);opacity:0;}to{transform:scale(1);opacity:1;}}
@@ -182,7 +182,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .settings-modal-ftr{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
 
 /* ─── Changelog Modal ─── */
-.changelog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.changelog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
 .changelog-overlay.open{display:flex;}
 .changelog-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
 .changelog-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;flex-shrink:0;}
@@ -201,7 +201,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .cl-tag.change{background:#eff6ff;color:#1d4ed8;}
 
 /* ─── About Modal ─── */
-.about-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.about-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
 .about-overlay.open{display:flex;}
 .about-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
 .about-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;flex-shrink:0;}
@@ -296,7 +296,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
     <div class="app-header-btns">
       <button class="hbtn active-user" id="userBtn" onclick="doLogout()" style="display:none;"></button>
       <button class="hbtn" id="aboutBtn" onclick="openAbout()">ℹ️ عن الأداة</button>
-      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.0 📋</button>
+      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.1 📋</button>
       <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
     </div>
   </div>
@@ -477,7 +477,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
     <div class="changelog-body">
       <div class="cl-version-block">
         <div class="cl-version-row">
-          <span class="cl-ver-badge">v2.1.0</span>
+          <span class="cl-ver-badge">v2.1.1</span>
+          <span class="cl-ver-date">09-08-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span>زرار الإعدادات في شاشة تسجيل الدخول كان بيفتح المودال لكنه بيترسم تحت شاشة الدخول (z-index 400 مقابل 500) — رُفع z-index كل المودالات (الإعدادات/التحديثات/عن الأداة/التأكيد) إلى 600</li>
+        </ul>
+      </div>
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v2.1.0</span>
           <span class="cl-ver-date">09-08-2026</span>
         </div>
         <ul class="cl-items">
