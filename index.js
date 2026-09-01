@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════
-// employees-admin-panel-worker — v2.1.0
+// employees-admin-panel-worker — v2.2.0
 // إدارة الموظفين (إضافة / تعديل / إيقاف / حذف) + سجل دخول وخروج
 // كل الأدوات + سجل إجراءات إدارية (audit log) + صلاحية is_admin
 //
@@ -11,18 +11,28 @@
 //   - سجل تدقيق (audit log) لكل إجراء إداري: مين عمل إيه ومتى
 //
 // v2.1.0 — عمود is_admin:
-//   - عمود جديد employees.is_admin (INTEGER, DEFAULT 0) — يحتاج ALTER TABLE يدوي (انظر SETUP.txt)
+//   - عمود جديد employees.is_admin (INTEGER NOT NULL DEFAULT 0)
 //   - check_employee/verify_employee بيرفضوا أي حساب is_admin = 0 من دخول هذه الأداة تحديداً
 //   - إجراءات جديدة: grant_admin / revoke_admin (مسجّلة في audit log)
 //   - حماية: لا يمكن لموظف سحب صلاحيته الإدارية من نفسه
 //
-// skills: worker-builder v1.0.0 · constants v1.0.0 — 31-08-2026
+// v2.2.0 — مواءمة مع ecommoda-worker-builder v1.1.0:
+//   - Step 5A ⑨: endpointان إلزاميان — ?action=diag و ?action=get_config
+//   - Step 5A ⑦: فشل D1 بيرجع كـ logged:false — مش 500 على عملية نجحت فعلاً
+//   - Step 5A ④: نتيجة كل إجراء إداري تلات حالات (success/warning/error)
+//     وبتتسجّل في extra.result عشان عمود "النتيجة" في تاب السجل
+//   - Step 5A ⑧: assertEnv() قبل أي كتابة — متغيّر ناقص بيوقف العملية باسمه
+//   - offset بيتقصّ على صفر (كان parseInt خام)
+//   - تصحيح توثيقي: مرجع SETUP.txt المحذوف اتشال — المخطط في CLAUDE.md §6
+//
+// skills: worker-builder v1.1.0 · constants v1.4.1 — 01-09-2026
 // ══════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════
 // §CONSTANTS
 // ══════════════════════════════════════════════════════
-const TOOL_NAME = 'employees_admin';
+const TOOL_NAME      = 'employees_admin';
+const WORKER_VERSION = 'v2.2.0';   // بيترجع من ?action=get_config — الواجهة بتقارنه بنسختها
 
 // أنواع إجراءات التدقيق (audit) — تُستخدم كـ type في جدول logs
 const ADMIN_ACTIONS = {
@@ -63,6 +73,32 @@ function json(data, status = 200, request = null) {
 }
 
 function validUsername(u) { return /^[a-zA-Z0-9_]{2,40}$/.test(u); }
+
+/**
+ * §HELPERS::assertEnv — Step 5A ⑧
+ * متغيّر ناقص لازم يوقف العملية برسالة **باسمه**، مش يتحوّل لفشل غامض جوه SQL.
+ * الأداة دي مالهاش [vars] خالص — المطلوب بس الـ binding والسر.
+ */
+function assertEnv(env, names) {
+  const missing = names.filter(n => !env[n]);
+  if (missing.length) throw new Error(`متغيّرات ناقصة في الـ Worker: ${missing.join(', ')} — راجع الداشبورد ثم Promote`);
+}
+
+/**
+ * §HELPERS::logSafe — Step 5A ⑦
+ * الفعل الأساسي (UPDATE/INSERT/DELETE) حصل فعلاً قبل النداء ده. فشل الكتابة في
+ * `logs` بعده **مايسقّطش الرد كله على 500** — بيرجع كـ `logged:false` عشان
+ * الواجهة تحذّر إن العملية تمت بس السجل ناقص.
+ * ⚠️ مش `.catch(() => {})` — ده بيخفي الفشل تمامًا وممنوع (anti-patterns).
+ */
+async function logSafe(db, entry) {
+  try {
+    await writeLog(db, entry);
+    return { logged: true, logError: null };
+  } catch (e) {
+    return { logged: false, logError: e.message };
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // §SHARED — Auth & Logging Functions — EcomModa D1 Pattern v1.3.0
@@ -259,6 +295,71 @@ export default {
 
     try {
 
+      // ─── §DIAG — endpointان إلزاميان (worker-builder Step 5A ⑨) ───
+      // get_config — بيكشف Promote ناقص أو Worker شبح: الواجهة بتقارن
+      // نسختها بنسخة الـ Worker وبتعرض تحذير لو مختلفين.
+      if (action === 'get_config') {
+        return json({ ok: true, version: WORKER_VERSION, tool: TOOL_NAME }, 200, request);
+      }
+
+      // diag — فحص ذاتي **بدون أي كتابة**.
+      // ⚠️ ممنوع يرجّع قيمة أي سر — الأسماء والأطوال بس.
+      if (action === 'diag') {
+        const checks = [];
+        const envKeys = Object.keys(env).sort().map(k => ({
+          name: k,
+          type: typeof env[k],
+          // الطول بيكشف المسافة المخفية في آخر السر — من غير ما يعرض القيمة
+          length: typeof env[k] === 'string' ? env[k].length : null,
+        }));
+
+        checks.push({
+          ok:   !!env.WORKER_SECRET,
+          name: 'WORKER_SECRET',
+          detail: env.WORKER_SECRET
+            ? `موجود — الطول ${String(env.WORKER_SECRET).length} حرف`
+            : 'ناقص — ضيفه في Settings → Variables and Secrets ثم Promote',
+        });
+        checks.push({
+          ok:   !!env.DB,
+          name: 'D1 binding (DB)',
+          detail: env.DB ? 'موجود في wrangler.toml' : 'ناقص — راجع [[d1_databases]] في wrangler.toml',
+        });
+
+        // اتصال D1 فعلي + وجود عمود is_admin في المخطط (CLAUDE.md §6)
+        try {
+          const row = await env.DB.prepare(
+            'SELECT COUNT(*) AS total, SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active, SUM(COALESCE(is_admin,0)) AS admins FROM employees'
+          ).first();
+          checks.push({
+            ok: true, name: 'جدول employees',
+            detail: `${row?.total ?? 0} موظف — منهم ${row?.active ?? 0} نشط و${row?.admins ?? 0} بصلاحية إدارة`,
+          });
+        } catch (e) {
+          checks.push({ ok: false, name: 'جدول employees', detail: `فشل الاستعلام: ${e.message}` });
+        }
+
+        try {
+          const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM logs WHERE tool = ?').bind(TOOL_NAME).first();
+          checks.push({ ok: true, name: 'جدول logs', detail: `${row?.n ?? 0} صف باسم الأداة (tool = '${TOOL_NAME}')` });
+        } catch (e) {
+          checks.push({ ok: false, name: 'جدول logs', detail: `فشل الاستعلام: ${e.message}` });
+        }
+
+        const origin = request.headers.get('Origin') || '(بدون Origin)';
+        checks.push({
+          ok:   ALLOWED_ORIGINS.includes(origin),
+          name: 'CORS Origin',
+          detail: `الطلب جاي من ${origin} — المسموح: ${ALLOWED_ORIGINS.join(' · ')}`,
+        });
+
+        return json({ ok: true, version: WORKER_VERSION, tool: TOOL_NAME, envKeys, checks }, 200, request);
+      }
+      // ──────────────────────────────────────────────────────
+
+      // متغيّر ناقص يوقف العملية برسالة باسمه — مش فشل غامض جوه SQL (Step 5A ⑧)
+      assertEnv(env, ['DB']);
+
       // ─── §AUTH ──────────────────────────────────────────────
       // check_employee — GET (no sensitive data — GET is ok)
       // ⚠️ مُخصَّص لهذه الأداة: بيضيف isAdmin للتحقق المبكر (قبل إدخال الـ PIN)
@@ -302,27 +403,29 @@ export default {
           return json({ ok: false, error: 'هذا الحساب غير مصرّح له بالدخول على أداة إدارة الموظفين' }, 403, request);
         }
 
-        await writeLog(env.DB, {
+        // ⚠️ الدخول نفسه نجح فعلاً فوق — فشل D1 بعد كده يرجع logged:false مش 500
+        const { logged } = await logSafe(env.DB, {
           tool:     TOOL_NAME,
           type:     'login',
           employee: username,
           notes:    `دخول: ${displayName}`,
         });
-        return json({ ok: true, displayName }, 200, request);
+        return json({ ok: true, displayName, logged }, 200, request);
       }
 
       // log_logout — GET ok (no sensitive data)
       if (action === 'log_logout') {
         const username = url.searchParams.get('username');
+        let logged = true;
         if (username) {
-          await writeLog(env.DB, {
+          ({ logged } = await logSafe(env.DB, {
             tool:     TOOL_NAME,
             type:     'logout',
             employee: username,
             notes:    `خروج: ${username.replace(/_/g, ' ')}`,
-          });
+          }));
         }
-        return json({ ok: true }, 200, request);
+        return json({ ok: true, logged }, 200, request);
       }
 
       // get_employees — GET (for HTML dropdown)
@@ -337,6 +440,13 @@ export default {
       // ─── §ADMIN — إدارة الموظفين (كتابة) ───────────────────
       // كل الأكشنز هنا محمية بالفعل بـ WORKER_SECRET من فوق.
       // actor = username الموظف اللي مسجّل دخول حالياً في الأداة (لغرض التدقيق فقط)
+      //
+      // ⚠️ عقد موحّد لكل إجراء إداري (Step 5A ④ و⑦):
+      //   الفعل الأساسي بيتنفّذ الأول ويتأكد من `r.changes` (مش من نية النداء)،
+      //   وبعدين السجل بيتكتب بـ logSafe. الرد بيرجع دايمًا:
+      //     status: 'success' | 'warning'   ← warning = الفعل تم والسجل فشل
+      //     logged: true | false            ← الواجهة بتحذّر لو false
+      //   ونفس القيمة بتتكتب في extra.result عشان عمود "النتيجة" في تاب السجل.
 
       // §ADMIN::listEmployees
       if (action === 'list_employees') {
@@ -362,15 +472,16 @@ export default {
         const exists = await env.DB.prepare('SELECT username FROM employees WHERE username = ?').bind(username).first();
         if (exists) return json({ ok: false, error: 'الـ username موجود بالفعل' }, 400, request);
 
-        await env.DB.prepare('INSERT INTO employees (username, display_name, is_admin) VALUES (?, ?, ?)').bind(username, displayName, isAdmin).run();
+        const r = await env.DB.prepare('INSERT INTO employees (username, display_name, is_admin) VALUES (?, ?, ?)').bind(username, displayName, isAdmin).run();
+        if (!r.success) return json({ ok: false, error: 'D1 ما أكدتش الإضافة' }, 500, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.ADD, employee: actor,
           notes: `إضافة موظف: ${displayName} (${username})${isAdmin ? ' — بصلاحية إدارة' : ''}`,
-          extra: { targetUsername: username, targetDisplayName: displayName, isAdmin: !!isAdmin },
+          extra: { targetUsername: username, targetDisplayName: displayName, isAdmin: !!isAdmin, result: 'success' },
         });
 
-        return json({ ok: true, message: `تمت إضافة ${displayName}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تمت إضافة ${displayName}` }, 200, request);
       }
 
       // §ADMIN::updateDisplayName
@@ -380,88 +491,94 @@ export default {
         const actor       = String(p('actor')).trim() || null;
         if (!username || !displayName) return json({ ok: false, error: 'username و display_name مطلوبان' }, 400, request);
 
+        const before = await env.DB.prepare('SELECT display_name FROM employees WHERE username = ?').bind(username).first();
         const r = await env.DB.prepare('UPDATE employees SET display_name = ? WHERE username = ?').bind(displayName, username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.UPDATE, employee: actor,
           notes: `تعديل اسم: ${username} → ${displayName}`,
-          extra: { targetUsername: username, newDisplayName: displayName },
+          valueBefore: before?.display_name ?? null, valueAfter: displayName,
+          extra: { targetUsername: username, newDisplayName: displayName, result: 'success' },
         });
 
-        return json({ ok: true, message: 'تم تحديث الاسم' }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: 'تم تحديث الاسم' }, 200, request);
       }
 
       // §ADMIN::disableEmployee
       if (action === 'disable_employee') {
         const username = String(p('username')).trim();
-        const actor     = String(p('actor')).trim() || null;
+        const actor    = String(p('actor')).trim() || null;
         if (!username) return json({ ok: false, error: 'username مطلوب' }, 400, request);
 
         const r = await env.DB.prepare('UPDATE employees SET is_active = 0 WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.DISABLE, employee: actor,
           notes: `إيقاف موظف: ${username}`,
-          extra: { targetUsername: username },
+          valueBefore: 'is_active=1', valueAfter: 'is_active=0',
+          extra: { targetUsername: username, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم إيقاف ${username}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم إيقاف ${username}` }, 200, request);
       }
 
       // §ADMIN::enableEmployee
       if (action === 'enable_employee') {
         const username = String(p('username')).trim();
-        const actor     = String(p('actor')).trim() || null;
+        const actor    = String(p('actor')).trim() || null;
         if (!username) return json({ ok: false, error: 'username مطلوب' }, 400, request);
 
         const r = await env.DB.prepare('UPDATE employees SET is_active = 1 WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.ENABLE, employee: actor,
           notes: `تفعيل موظف: ${username}`,
-          extra: { targetUsername: username },
+          valueBefore: 'is_active=0', valueAfter: 'is_active=1',
+          extra: { targetUsername: username, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم تفعيل ${username}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم تفعيل ${username}` }, 200, request);
       }
 
       // §ADMIN::resetPin
       if (action === 'reset_pin') {
         const username = String(p('username')).trim();
-        const actor     = String(p('actor')).trim() || null;
+        const actor    = String(p('actor')).trim() || null;
         if (!username) return json({ ok: false, error: 'username مطلوب' }, 400, request);
 
         const r = await env.DB.prepare('UPDATE employees SET pin = NULL WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.RESET_PIN, employee: actor,
           notes: `مسح PIN: ${username}`,
-          extra: { targetUsername: username },
+          extra: { targetUsername: username, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم مسح PIN لـ ${username}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم مسح PIN لـ ${username}` }, 200, request);
       }
 
       // §ADMIN::deleteEmployee
       if (action === 'delete_employee') {
         const username = String(p('username')).trim();
-        const actor     = String(p('actor')).trim() || null;
+        const actor    = String(p('actor')).trim() || null;
         if (!username) return json({ ok: false, error: 'username مطلوب' }, 400, request);
 
+        // ⚠️ الحذف لا رجعة فيه — الاسم المعروض بيتقرا قبله عشان السجل يفضل مفهوم بعدين
+        const before = await env.DB.prepare('SELECT display_name FROM employees WHERE username = ?').bind(username).first();
         const r = await env.DB.prepare('DELETE FROM employees WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.DELETE, employee: actor,
-          notes: `حذف نهائي: ${username}`,
-          extra: { targetUsername: username },
+          notes: `حذف نهائي: ${username}${before?.display_name ? ` (${before.display_name})` : ''}`,
+          extra: { targetUsername: username, targetDisplayName: before?.display_name ?? null, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم حذف ${username} نهائياً` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم حذف ${username} نهائياً` }, 200, request);
       }
 
       // §ADMIN::grantAdmin
@@ -473,19 +590,20 @@ export default {
         const r = await env.DB.prepare('UPDATE employees SET is_admin = 1 WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.GRANT_ADMIN, employee: actor,
           notes: `منح صلاحية إدارة: ${username}`,
-          extra: { targetUsername: username },
+          valueBefore: 'is_admin=0', valueAfter: 'is_admin=1',
+          extra: { targetUsername: username, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم منح صلاحية الإدارة لـ ${username}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم منح صلاحية الإدارة لـ ${username}` }, 200, request);
       }
 
       // §ADMIN::revokeAdmin
       if (action === 'revoke_admin') {
         const username = String(p('username')).trim();
-        const actor     = String(p('actor')).trim() || null;
+        const actor    = String(p('actor')).trim() || null;
         if (!username) return json({ ok: false, error: 'username مطلوب' }, 400, request);
 
         // حماية: موظف مايقدرش يسحب صلاحيته من نفسه (تفادي قفل النفس بره الأداة)
@@ -496,13 +614,14 @@ export default {
         const r = await env.DB.prepare('UPDATE employees SET is_admin = 0 WHERE username = ?').bind(username).run();
         if (r.changes === 0) return json({ ok: false, error: 'المستخدم غير موجود' }, 404, request);
 
-        await writeLog(env.DB, {
+        const { logged, logError } = await logSafe(env.DB, {
           tool: TOOL_NAME, type: ADMIN_ACTIONS.REVOKE_ADMIN, employee: actor,
           notes: `سحب صلاحية إدارة: ${username}`,
-          extra: { targetUsername: username },
+          valueBefore: 'is_admin=1', valueAfter: 'is_admin=0',
+          extra: { targetUsername: username, result: 'success' },
         });
 
-        return json({ ok: true, message: `تم سحب صلاحية الإدارة من ${username}` }, 200, request);
+        return json({ ok: true, status: logged ? 'success' : 'warning', logged, logError, message: `تم سحب صلاحية الإدارة من ${username}` }, 200, request);
       }
 
       // §ADMIN::getAccessLog — سجل الدخول والخروج من كل الأدوات (عبر كل الـ tools مش بس هذه)
@@ -513,7 +632,7 @@ export default {
         const dateFrom = url.searchParams.get('date_from') || '';     // YYYY-MM-DD
         const dateTo   = url.searchParams.get('date_to')   || '';     // YYYY-MM-DD
         const limit    = Math.min(parseInt(url.searchParams.get('limit') || '300'), 1000);
-        const offset   = parseInt(url.searchParams.get('offset') || '0');
+        const offset   = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0);
 
         let sql = `SELECT timestamp, tool, type, employee, notes
                    FROM logs WHERE type IN ('login','logout')`;
@@ -552,8 +671,8 @@ export default {
           employee: url.searchParams.get('employee') || null,
           type:     url.searchParams.get('type')     || null,
           search:   url.searchParams.get('search')   || null,
-          limit:    parseInt(url.searchParams.get('limit')  || '100'),
-          offset:   parseInt(url.searchParams.get('offset') || '0'),
+          limit:    Math.min(parseInt(url.searchParams.get('limit') || '100'), 100),
+          offset:   Math.max(parseInt(url.searchParams.get('offset') || '0'), 0),
         });
         return json({ ok: true, entries }, 200, request);
       }
