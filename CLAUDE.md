@@ -1,6 +1,6 @@
 # Employees Admin Panel — قواعد الأداة
 
-**وثيقة الأداة v1.0.0** · آخر تحديث: **31-08-2026**
+**وثيقة الأداة v1.1.0** · آخر تحديث: **01-09-2026**
 
 أداة **قطعتين**: Worker على Cloudflare + واجهة HTML على GitHub Pages.
 
@@ -46,12 +46,15 @@
 | `reset_pin` · `delete_employee` | مسح PIN / حذف نهائي |
 | `grant_admin` · `revoke_admin` | منح/سحب صلاحية إدارة |
 
-> ⚠️ `ecommoda-constants` §7 بيسجّل خمس قيم بس للأداة دي
-> (`login` · `enable_employee` · `disable_employee` · `grant_admin` · `reset_pin`)
-> — وهي القيم اللي **ظهرت فعليًا في D1**. الكود بيعرّف **تسعة** إجراءات في
-> `ADMIN_ACTIONS`؛ الأربعة الباقية (`add_employee` · `update_display_name` ·
-> `delete_employee` · `revoke_admin`) موجودة في الكود بس لسه ما اتنفّذتش ولا مرة.
-> **الجدول في `ecommoda-constants` محتاج يكمّل التسعة** — بند مفتوح تحت.
+> ⚠️ **الكود بيكتب ١٠ أنواع، و`ecommoda-constants` §7 مسجّل ٥ بس.**
+> المسجَّل: `login` · `enable_employee` · `disable_employee` · `grant_admin` ·
+> `reset_pin` — وهي بالظبط القيم اللي **ظهرت فعليًا في D1**.
+> **الناقص خمسة** (متأكَّد بالعدّ من الكود 01-09-2026): `logout` ·
+> `add_employee` · `update_display_name` · `delete_employee` · `revoke_admin`.
+> الخمسة دول موجودين في الكود بس لسه ما اتنفّذوش ولا مرة، عشان كده ما ظهروش
+> في D1 — **مش معناها إنهم مش هيتكتبوا**. بند مفتوح تحت.
+>
+> المصدر: `ADMIN_ACTIONS` فيه **٨** إجراءات، زائد `login` و`logout` = ١٠.
 
 ---
 
@@ -75,8 +78,20 @@
 SELECT type, COUNT(*) AS n, MAX(timestamp) AS latest FROM logs WHERE tool = 'employees_admin' GROUP BY type ORDER BY n DESC;
 ```
 
-**بند ١٠ في قائمة التحقق** بيتقفل كده: سجّل دخول على الأداة بعد النقل →
-لازم صف `login` جديد يزوّد العدد لـ 12.
+✅ **بند ١٠ اتقفل — 01-09-2026.** بعد الدمج والتشغيل، نفس الاستعلام رجّع:
+
+| `type` | قبل | بعد |
+|---|---|---|
+| `login` | 11 | **13** |
+| `enable_employee` | 2 | 2 |
+| `disable_employee` | 2 | 2 |
+| `reset_pin` | 1 | 1 |
+| `grant_admin` | 1 | 1 |
+
+**الـ `login` بس هو اللي زاد، والباقي ثابت بالظبط** — ده إثبات إن الأداة
+بتكتب في D1 من النسخة المنشورة من git، ومن غير أي أثر جانبي على البيانات
+التاريخية. الأداة **مالهاش** فخ السادس أصلاً (§1)، والبند ده بقى مقفول
+بدليل مش بافتراض.
 
 ---
 
@@ -122,18 +137,34 @@ git show d3a4c66:1.1.0.html > /tmp/1.1.0.html
 
 ## 6. مسائل مفتوحة
 
-1. 🔴 **عمود `employees.is_admin` محتاج `ALTER TABLE` يدوي** — الكود بيشير
-   لملف `SETUP.txt` **غير موجود في الريبو**. العمود موجود فعليًا في D1
-   دلوقتي (متأكَّد — `grant_admin` اشتغل واتسجّل)، بس **الأمر نفسه مش موثّق
-   في أي مكان**. لو D1 اتعاد بناؤها يومًا، مفيش مرجع للأمر.
-   → الأمر المطلوب توثيقه: `ALTER TABLE employees ADD COLUMN is_admin INTEGER DEFAULT 0;`
+1. ✅ **عمود `employees.is_admin` — اتوثّق 01-09-2026 (كان بند 🔴).**
+   الكود بيشير لملف `SETUP.txt` **غير موجود في الريبو ولا في أي حتة**،
+   فالأمر اتقرا من مخطط D1 الفعلي (`sqlite_master`) واتوثّق هنا.
+
+   ⛔ **متشغّلوش دلوقتي — العمود موجود بالفعل**، والتنفيذ هيرمي
+   `duplicate column name: is_admin`. ده **مرجع لإعادة البناء بس**.
+
+   ```sql
+   ALTER TABLE employees ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0;
+   ```
+
+   ⚠️ **`NOT NULL` جزء من التعريف الفعلي** — المخطط الحقيقي في D1 هو
+   `is_admin INTEGER NOT NULL DEFAULT 0`. أمر من غير `NOT NULL` بيدّي عمود
+   nullable مختلف عن الإنتاج. (الكود بيستخدم `COALESCE(is_admin, 0)` في
+   `list_employees`، فهو بيتحمّل الاتنين — يعني الفرق **مش هيبان كخطأ**،
+   وده بالظبط اللي بيخلي التوثيق الدقيق مهم هنا.)
+
+   المخطط الكامل للجدول وقت التوثيق:
+   ```sql
+   CREATE TABLE employees (username TEXT PRIMARY KEY, display_name TEXT NOT NULL, pin TEXT, is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_login TEXT, is_admin INTEGER NOT NULL DEFAULT 0);
+   ```
 
 2. 🟡 **الواجهة بتخزّن `WORKER_SECRET` في `localStorage`** (مفتاح
    `employees_admin_worker_secret`) عبر مودال الإعدادات — نمط أقدم من
    `ecommoda-constants` §5b (اللي بيقول الرابط يتحط في `§CONFIG` مباشرة).
    **ما اتغيّرش في النقل عن قصد** — النقل بايت ببايت. أي تغيير هنا شغل منفصل.
 
-3. 🟡 **`ecommoda-constants` §7 ناقص أربع قيم `type`** للأداة دي — تفصيل في §2 فوق.
+3. 🟡 **`ecommoda-constants` §7 ناقص **خمس** قيم `type`** للأداة دي — تفصيل في §2 فوق.
 
 4. ⚪ **`Build watch paths` لسه ما اتضيّقتش** — الافتراضي `*`، يعني أي تعديل
    HTML بينشر الـ Worker تاني بلا داعي (`ecommoda-tool-migration-playbook` §13-ب).
