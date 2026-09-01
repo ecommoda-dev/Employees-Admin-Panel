@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<!-- skills: html-builder v1.0.0 · constants v1.0.0 — 31-08-2026 -->
+<!-- skills: html-builder v2.2.0 · constants v1.4.1 — 01-09-2026 -->
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>EcomModa — إدارة الموظفين</title>
+<!-- خط واحد فقط: Noto Sans Arabic — IBM Plex Mono أُلغي (design-system.md) -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
 <!-- ══════════════════════════════════════════════════════
-     §STYLES
+     §STYLES — :root variables + كل CSS الأداة
      ══════════════════════════════════════════════════════ -->
 <style>
 :root {
@@ -24,22 +24,35 @@
   --purple:#7c3aed; --purple-light:#f5f3ff; --purple-border:#c4b5fd;
   --radius:12px; --radius-sm:8px;
   --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  /* Tier L — تلات تابات كل واحد فيه جدول حقيقي، وأوسعهم (الموظفون) فيه عمود إجراءات
+     بخمس أزرار. الجدول الكامل → design-system.md § Container Width Tiers */
+  --container-max:1400px;
   --font-body:'Noto Sans Arabic',-apple-system,sans-serif;
-  --font-mono:'IBM Plex Mono',monospace;
+  /* نفس قيمة --font-body بالظبط — المتغيّر باقٍ للتوافق مع الكلاسات القديمة فقط */
+  --font-mono:'Noto Sans Arabic',-apple-system,sans-serif;
   --font: var(--font-body);
   --mono: var(--font-mono);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary);min-height:100vh;padding:12px;font-size:14px;line-height:1.5;direction:rtl;}
-.container{max-width:960px;margin:0 auto;}
+.container{max-width:var(--container-max);margin:0 auto;}
+
+/* ─── Freeze on Scroll — الهيدر + شريط التابات (tabs-and-modals.md § 1b) ─── */
+.sticky-header-wrap{position:sticky;top:0;z-index:300;background:var(--bg);padding-top:2px;margin:0 -2px;}
+.sticky-header-wrap.stuck{box-shadow:0 6px 18px rgba(0,0,0,.10);}
+.sticky-header-wrap.stuck .app-header{padding:6px 14px;margin-bottom:6px;}
+.sticky-header-wrap.stuck .app-icon{font-size:16px;}
+.sticky-header-wrap.stuck .app-title-text h1{font-size:12.5px;}
+.sticky-header-wrap.stuck .app-title-text span{max-height:0;opacity:0;margin-top:0;}
+.sticky-header-wrap.stuck .hbtn{padding:4px 9px;font-size:11px;}
 
 /* ─── Header ─── */
-.app-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;}
+.app-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;transition:padding .18s ease;}
 .app-title{display:flex;align-items:center;gap:10px;}
-.app-icon{font-size:22px;}
-.app-title-text h1{font-size:15px;font-weight:700;line-height:1.2;}
-.app-title-text span{font-size:11px;color:var(--text-muted);display:block;}
-.app-header-btns{display:flex;align-items:center;gap:6px;}
+.app-icon{font-size:22px;transition:font-size .18s ease;}
+.app-title-text h1{font-size:15px;font-weight:700;line-height:1.2;transition:font-size .18s ease;}
+.app-title-text span{font-size:11px;color:var(--text-muted);display:block;overflow:hidden;max-height:16px;margin-top:2px;transition:max-height .18s ease,opacity .18s ease,margin-top .18s ease;}
+.app-header-btns{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .hbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px solid var(--border-strong);background:var(--surface);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .hbtn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
 .hbtn.settings-configured{border-color:var(--green);color:var(--green);background:var(--green-light);}
@@ -48,50 +61,179 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .hbtn.active-user{border-color:var(--green);color:var(--green);background:var(--green-light);}
 .hbtn.active-user:hover{border-color:var(--red);color:var(--red);background:var(--red-light);}
 
-/* ─── Tabs ─── */
-.tabs-bar{display:flex;gap:4px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px;box-shadow:var(--shadow);}
-.tab-btn{flex:1;padding:9px 10px;border:2px solid transparent;background:transparent;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
-.tab-btn:hover{background:var(--surface-2);color:var(--text-primary);}
-.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,.25);}
+/* ─── Main Tabs — عرض كامل + تقسيم متساوٍ (tabs-and-modals.md § 1) ─── */
+.main-tabs-bar{display:flex;gap:4px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px;box-shadow:var(--shadow);overflow:hidden;transition:max-height .22s ease,opacity .18s ease,padding .18s ease,margin .18s ease,border-width .18s ease;}
+.main-tab-btn{flex:1;padding:9px 10px;border:2px solid transparent;background:transparent;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.main-tab-btn:hover{background:var(--surface-2);color:var(--text-primary);}
+.main-tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,.25);}
+.sticky-header-wrap.stuck .main-tabs-bar{max-height:0 !important;opacity:0;padding:0;margin-bottom:0;border-width:0;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
+
+/* Chip التاب الحالي — يظهر بس وقت الـ Sticky */
+.active-tab-chip{display:none;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid var(--border-strong);border-radius:20px;background:var(--surface-2);font-size:11.5px;font-weight:700;color:var(--text-primary);cursor:pointer;position:relative;white-space:nowrap;transition:border-color .15s,color .15s;}
+.active-tab-chip:hover{border-color:var(--accent);color:var(--accent);}
+.active-tab-chip.open{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-light);}
+.sticky-header-wrap.stuck .active-tab-chip{display:flex;}
+.chip-arrow{font-size:9px;color:var(--text-muted);transition:transform .2s;}
+.active-tab-chip.open .chip-arrow{transform:rotate(180deg);}
+.tab-chip-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:310;min-width:200px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;padding:4px;}
+.tab-chip-menu.open{display:block;}
+.tab-chip-item{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12.5px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--text-secondary);white-space:nowrap;}
+.tab-chip-item:hover{background:var(--surface-2);}
+.tab-chip-item.active{background:var(--accent-light);color:var(--accent-dark);}
 
 /* ─── Info / Banner ─── */
 .info-card{background:var(--accent-light);border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px;}
 .info-card-icon{flex-shrink:0;font-size:14px;margin-top:1px;}
+.warn-banner{background:var(--amber-light);border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--amber);font-weight:600;margin-bottom:12px;display:none;}
+.warn-banner.visible{display:block;}
 
-/* ─── Toolbar ─── */
-.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
-.toolbar-left{display:flex;align-items:center;gap:8px;}
-.toolbar-title{font-size:13px;font-weight:700;}
-.count-badge{background:var(--accent-light);color:var(--accent);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;}
-.btn-add{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;}
-.btn-add:hover{background:var(--accent-dark);}
-.btn-icon{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;}
-.btn-icon:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
-.btn-icon:disabled{opacity:.5;cursor:not-allowed;}
+/* ─── Unified Section — فلاتر + جدول في كارت واحد (data-table-standard.md § 1) ───
+   ⚠️ ممنوع overflow:hidden هنا — بيقص قوايم الفلاتر المنسدلة */
+.unified-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;}
+.section-divider{border-top:1px solid var(--border);}
+
+/* ─── Filters header ─── */
+.flt-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface-2);cursor:pointer;user-select:none;transition:background .12s;border-radius:var(--radius) var(--radius) 0 0;}
+.flt-header:hover{background:#f0f4f8;}
+.flt-header-right{display:flex;align-items:center;gap:10px;}
+.flt-icon{width:34px;height:22.5px;color:var(--text-muted);transition:color .2s;flex-shrink:0;}
+.flt-icon.active{color:var(--accent);}
+.flt-toggle{font-size:13px;color:var(--text-muted);transition:transform .25s;}
+.flt-toggle.open{transform:rotate(180deg);}
+.flt-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.flt-body.collapsed{display:none;}
+.flt-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.flt-g{display:flex;flex-direction:column;gap:3px;}
+.flt-label{font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+.clear-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;height:34px;border:1px solid var(--red-border);color:var(--red);background:var(--red-light);}
+.clear-btn:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.clear-btn.inactive{border-color:var(--border);color:var(--text-muted);background:var(--surface-2);cursor:not-allowed;opacity:.6;}
+.clear-btn.inactive:hover{background:var(--surface-2);color:var(--text-muted);border-color:var(--border);}
+
+/* ─── Search box — الأيقونة شمال إلزاميًا (بدونها overlap مع العربي) ─── */
+.search-wrap{position:relative;max-width:280px;flex:1;min-width:200px;}
+.search-input{width:100%;border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px 12px 8px 34px;font-family:inherit;font-size:13px;height:36px;box-sizing:border-box;outline:none;transition:border-color .15s,background .15s;background:var(--surface);}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+.search-input.has-value{border-color:var(--accent);background:var(--accent-light);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text-muted);pointer-events:none;}
+
+/* ─── Multi-select filter (multi-select-filter.md) ─── */
+.ms-wrap{position:relative;}
+.ms-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:170px;height:34px;padding:6px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-primary);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.ms-btn:hover{border-color:var(--accent);}
+.ms-btn.has-selection{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-light);}
+.ms-btn.open{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+.ms-btn .ms-count{font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;}
+.ms-btn .ms-arrow{font-size:9px;color:var(--text-muted);transition:transform .2s;flex-shrink:0;}
+.ms-btn.open .ms-arrow{transform:rotate(180deg);}
+.ms-menu{position:absolute;top:calc(100% + 4px);right:0;z-index:200;width:250px;max-width:85vw;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;flex-direction:column;overflow:hidden;}
+.ms-menu.open{display:flex;}
+.ms-ftr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.ms-ftr-clear{font-size:11.5px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:5px;font-family:inherit;}
+.ms-ftr-clear:hover{background:var(--red-light);}
+.ms-ftr-count{font-size:11px;color:var(--text-muted);}
+.ms-search-wrap{padding:8px;border-bottom:1px solid var(--border);}
+.ms-search{width:100%;height:32px;border:1px solid var(--border-strong);border-radius:6px;padding:0 10px;font-family:inherit;font-size:12px;outline:none;background:var(--surface-2);}
+.ms-search:focus{border-color:var(--accent);background:var(--surface);}
+.ms-selectall-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface-2);font-size:12px;font-weight:700;cursor:pointer;user-select:none;}
+.ms-selectall-row:hover{background:#f0f4f8;}
+.ms-list{max-height:200px;overflow-y:auto;padding:4px;}
+.ms-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:12.5px;cursor:pointer;user-select:none;transition:background .1s;}
+.ms-item:hover{background:var(--surface-2);}
+.ms-item.checked{background:var(--accent-light);}
+.ms-item input[type=checkbox],.ms-selectall-row input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;}
+.ms-item .ms-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ms-item .ms-item-mono{font-family:var(--font-mono);direction:ltr;}
+.ms-empty{padding:16px;text-align:center;font-size:12px;color:var(--text-muted);}
+
+/* ─── Chips — سطر منفصل لكل فلتر + اسم الفلتر مرة واحدة ─── */
+.ms-chips-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.ms-chips-row:empty{display:none;}
+.chips-label{font-size:11.5px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
+.ms-chip{display:flex;align-items:center;gap:5px;background:var(--accent-light);color:var(--accent-dark);border:1px solid #bfdbfe;border-radius:20px;padding:3px 6px 3px 10px;font-size:11.5px;font-weight:600;}
+.ms-chip button{border:none;background:rgba(37,99,235,.15);color:var(--accent-dark);width:16px;height:16px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;}
+.ms-chip button:hover{background:var(--accent);color:#fff;}
+
+/* ─── Date range preset (date-range-filter.md) ─── */
+.range-preset-wrap{position:relative;}
+.range-preset-btn{display:flex;align-items:center;gap:6px;height:34px;padding:6px 10px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);font-family:inherit;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;white-space:nowrap;}
+.range-preset-btn.has-preset{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-light);}
+.range-preset-menu{position:absolute;top:calc(100% + 4px);right:0;z-index:200;width:185px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;padding:4px;}
+.range-preset-menu.open{display:block;}
+.range-preset-clear-row{padding:6px 8px;border-bottom:1px solid var(--border);}
+.range-preset-clear-row button{font-size:11.5px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:5px;font-family:inherit;}
+.range-preset-clear-row button:hover{background:var(--red-light);}
+.range-preset-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--text-primary);}
+.range-preset-item:hover{background:var(--surface-2);}
+.range-preset-item.active{background:var(--accent-light);color:var(--accent-dark);font-weight:700;}
+.range-preset-item .pr-check{display:none;color:var(--accent);font-size:11px;}
+.range-preset-item.active .pr-check{display:inline;}
+.range-preset-sep{height:1px;background:var(--border);margin:4px 2px;}
+.range-preset-item.has-sub{position:relative;}
+.range-preset-item.has-sub .pr-sub-arrow{font-size:11px;color:var(--text-muted);transition:color .15s;}
+.range-preset-item.has-sub:hover .pr-sub-arrow,.range-preset-item.has-sub.open .pr-sub-arrow{color:var(--accent);}
+.month-submenu{position:absolute;top:-4px;right:calc(100% + 6px);width:220px;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;padding:12px;z-index:210;}
+.month-submenu.open{display:block;}
+.month-select-row{display:flex;gap:8px;}
+.month-select{flex:1;height:34px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:0 6px;font-family:inherit;font-size:12.5px;color:var(--text-primary);background:var(--surface);outline:none;cursor:pointer;}
+.month-select.filled{border-color:var(--accent);background:var(--accent-light);color:var(--accent-dark);}
+.month-select-hint{font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:8px;}
+.range-date-wrap input[type=date]{width:150px;height:34px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:6px 10px;font-family:inherit;font-size:12px;color:var(--text-primary);background:var(--surface);outline:none;cursor:pointer;}
+.range-date-wrap input[type=date]:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.08);}
+
+/* ─── Table section bar (data-table-standard.md § 7) ─── */
+.tbl-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--surface-2);cursor:pointer;user-select:none;transition:background .12s;flex-wrap:wrap;}
+.tbl-bar:hover{background:#f0f4f8;}
+.tbl-bar-right,.tbl-bar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tbl-toggle{font-size:13px;color:var(--text-muted);transition:transform .25s;}
+.tbl-toggle.open{transform:rotate(180deg);}
+.results-wrap{display:flex;align-items:center;gap:8px;}
+.results-label{font-size:14px;font-weight:800;color:var(--text-primary);white-space:nowrap;}
+.results-count{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:34px;padding:0 10px;font-family:var(--font-mono);font-size:17px;font-weight:800;color:var(--purple);background:var(--purple-light);border:1.5px solid var(--purple-border);border-radius:var(--radius-sm);}
+.act-btn{display:flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;border:none;}
+.act-btn.refresh{background:var(--surface);border:1px solid var(--border-strong);color:var(--text-primary);}
+.act-btn.refresh:hover{border-color:var(--accent);color:var(--accent);}
+.act-btn.export{background:var(--green-light);border:1px solid var(--green-border);color:var(--green);}
+.act-btn.export:hover{background:var(--green);color:#fff;}
+.act-btn.add{background:var(--accent);border:1px solid var(--accent);color:#fff;}
+.act-btn.add:hover{background:var(--accent-dark);}
+.act-btn:disabled{opacity:.5;cursor:not-allowed;}
 .spinning .refresh-icon{animation:spin .6s linear infinite;display:inline-block;}
-@keyframes spin{to{transform:rotate(360deg);}}
+.tbl-body-wrap{max-height:2400px;overflow:hidden;transition:max-height .3s ease;border-radius:0 0 var(--radius) var(--radius);}
+.tbl-body-wrap.collapsed{max-height:0;}
+.tbl-scroll{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius);}
 
-/* ─── Employees Table ─── */
-.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;overflow-x:auto;}
-.emp-table{width:100%;border-collapse:collapse;}
-.emp-table th{padding:11px 14px;text-align:right;font-size:11px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border-bottom:2px solid var(--border);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
-.emp-table td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;}
-.emp-table tr:last-child td{border-bottom:none;}
-.emp-table tr:hover td{background:#fafafa;}
+/* ─── Data table (design-system.md § Data Tables) ─── */
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.data-table thead th{text-align:center;background:var(--surface-2);color:var(--text-secondary);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:10px 8px;border-bottom:2px solid var(--border-strong);white-space:nowrap;}
+.data-table tbody td{text-align:center;padding:10px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.data-table thead th,.data-table tbody td{border-inline-start:1px solid var(--border);}
+.data-table thead th:first-child,.data-table tbody td:first-child{border-inline-start:none;}
+.data-table tbody tr:hover{background:var(--surface-2);}
+.sortable-th{cursor:pointer;user-select:none;transition:background .12s,color .12s;}
+.sortable-th:hover{background:var(--accent-light);color:var(--accent-dark);}
+.sortable-th.sorted{background:var(--accent-light);color:var(--accent-dark);}
+.sort-icon{display:inline-block;font-size:10px;color:var(--accent);font-weight:900;}
+.sort-icon.active{margin-inline-start:4px;}
+.col-num{font-family:var(--font-mono);direction:ltr;white-space:nowrap;}
+.empty-row td{padding:40px;text-align:center;color:var(--text-muted);font-size:13px;}
+.cell-notes{white-space:normal;min-width:220px;text-align:right;color:var(--text-secondary);}
+
+/* ─── Employees table cells ─── */
 .emp-name{font-weight:700;}
 .emp-username{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-light);border:1px solid #bfdbfe;border-radius:4px;padding:2px 7px;display:inline-block;margin-top:2px;direction:ltr;}
 .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .status-active{background:var(--green-light);color:var(--green);}
 .status-inactive{background:var(--red-light);color:var(--red);}
+.status-neutral{background:var(--surface-2);color:var(--text-muted);}
 .pin-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;}
 .pin-set{background:var(--green-light);color:var(--green);}
 .pin-notset{background:var(--amber-light);color:var(--amber);}
-.date-text{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);}
 .never-text{color:var(--text-muted);font-size:12px;}
-.actions-cell{display:flex;gap:4px;flex-wrap:wrap;}
-.act-btn{padding:5px 9px;border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.actions-cell{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.row-btn{padding:5px 9px;border-radius:var(--radius-sm);font-family:inherit;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all .15s;white-space:nowrap;}
 .act-edit{background:var(--accent-light);color:var(--accent);border-color:#bfdbfe;}
 .act-edit:hover{background:var(--accent);color:#fff;}
 .act-disable{background:var(--amber-light);color:var(--amber);border-color:var(--amber-border);}
@@ -103,48 +245,64 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .act-delete{background:var(--red-light);color:var(--red);border-color:var(--red-border);}
 .act-delete:hover{background:var(--red);color:#fff;}
 
-/* ─── Access Log & Audit Log — shared filter/list styles ─── */
-.log-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end;}
-.log-filter-group{display:flex;flex-direction:column;gap:4px;}
-.log-filter-label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;}
-.log-select,.log-date,.log-search{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:7px 10px;font-family:inherit;font-size:12px;color:var(--text-primary);background:var(--surface);outline:none;transition:border-color .15s;}
-.log-select:focus,.log-date:focus,.log-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
-.log-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.log-entry{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background .1s;}
-.log-entry:last-child{border-bottom:none;}
-.log-entry:hover{background:var(--surface-2);}
-.log-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.dot-login,.dot-action{background:var(--green);}
-.dot-logout{background:var(--text-muted);}
-.log-content{flex:1;min-width:0;}
-.log-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;}
-.log-emp-badge{font-size:12px;font-weight:700;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 9px;}
-.log-type-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;}
-.type-login,.type-action{background:var(--green-light);color:var(--green);}
+/* ─── Log badges ─── */
+.log-emp-badge{font-size:11.5px;font-weight:700;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:2px 9px;display:inline-block;}
+.log-type-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;display:inline-block;}
+.type-login{background:var(--green-light);color:var(--green);}
 .type-logout{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border);}
-.log-tool-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-light);border:1px solid var(--purple-border);border-radius:4px;padding:2px 7px;direction:ltr;}
-.log-notes{font-size:12px;color:var(--text-secondary);margin-top:2px;}
-.log-time{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);}
-.log-empty{padding:50px 20px;text-align:center;color:var(--text-muted);font-size:13px;}
-.log-empty-icon{font-size:32px;margin-bottom:8px;}
-.log-total{padding:8px 16px;background:var(--surface-2);border-top:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;}
-.pager{display:flex;gap:6px;align-items:center;}
-.pager button{padding:4px 10px;border:1px solid var(--border-strong);background:var(--surface);border-radius:6px;font-family:inherit;font-size:11px;cursor:pointer;}
-.pager button:disabled{opacity:.4;cursor:not-allowed;}
+.type-action{background:var(--accent-light);color:var(--accent-dark);}
+.log-tool-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-light);border:1px solid var(--purple-border);border-radius:4px;padding:2px 7px;direction:ltr;display:inline-block;}
+/* عمود "النتيجة" — الصفوف القديمة بلا extra.result بتتعرض "—" مش "✓" (Step 3C) */
+.badge-success{background:var(--green-light);color:var(--green);border:1px solid var(--green-border);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-warn{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-danger{background:var(--red-light);color:var(--red);border:1px solid var(--red-border);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-unknown{color:var(--text-muted);font-weight:700;}
 
 /* ─── States ─── */
-.state-box{padding:50px 20px;text-align:center;color:var(--text-muted);}
-.state-icon{font-size:36px;margin-bottom:10px;}
-.state-text{font-size:13px;}
 .loading-spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-/* ─── Generic Modals (Add/Edit/Confirm) ─── */
+/* ─── Modal Shell — About / Changelog (tabs-and-modals.md § 2) ─── */
+.eco-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
+.eco-overlay.open{display:flex;}
+.eco-modal{background:var(--surface);border-radius:var(--radius);width:90%;max-width:calc(var(--container-max) * .9);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
+.eco-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;background:var(--surface);flex-shrink:0;}
+.eco-modal-body{overflow-y:auto;padding:16px 20px;flex:1;}
+
+/* ─── زرار الإغلاق ✕ — إطار أحمر + خلفية حمراء (tabs-and-modals.md § 3) ─── */
+.modal-close-x{background:var(--red-light);border:1.5px solid var(--red-border);color:var(--red);font-size:14px;font-weight:700;line-height:1;padding:4px 11px;border-radius:var(--radius-sm);font-family:inherit;cursor:pointer;transition:all .15s;}
+.modal-close-x:hover{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* ─── About Modal content (tabs-and-modals.md § 4) ─── */
+.about-sec{border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;}
+.about-sec > summary{padding:11px 14px;font-weight:700;font-size:14px;background:var(--surface-2);cursor:pointer;user-select:none;}
+.about-sec-body{padding:14px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.75;}
+.about-sec-body h4{font-size:12px;font-weight:700;color:var(--accent);margin-top:4px;}
+.about-sec-body ol,.about-sec-body ul{padding-inline-start:20px;display:flex;flex-direction:column;gap:4px;}
+.about-sec-body code{font-family:var(--font-mono);font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;direction:ltr;display:inline-block;}
+.about-sec-body table{width:100%;border-collapse:collapse;font-size:12px;}
+.about-sec-body th,.about-sec-body td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;}
+
+/* ─── Changelog content ─── */
+.cl-version-block{margin-bottom:4px;}
+.cl-version-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cl-ver-badge{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;direction:ltr;}
+.cl-ver-badge.old{background:var(--surface-2);color:var(--text-secondary);border-color:var(--border-strong);}
+.cl-ver-date{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);direction:ltr;}
+.cl-items{list-style:none;display:flex;flex-direction:column;gap:5px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--border);}
+.cl-version-block:last-child .cl-items{border-bottom:none;padding-bottom:0;margin-bottom:0;}
+.cl-item{display:flex;gap:8px;font-size:13px;}
+.cl-tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-top:2px;}
+.cl-tag.new{background:#f0fdf4;color:#15803d;}
+.cl-tag.fix{background:#fef2f2;color:#b91c1c;}
+.cl-tag.change{background:#eff6ff;color:#1d4ed8;}
+
+/* ─── Generic Modals (Add / Edit / Confirm) ─── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
 .overlay.open{opacity:1;pointer-events:all;}
 .modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;transform:translateY(14px);transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
 .overlay.open .modal{transform:translateY(0);}
 .modal-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
-.modal-close{background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-muted);}
 .modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;max-height:60vh;overflow-y:auto;}
 .modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
 .field-group{display:flex;flex-direction:column;gap:5px;}
@@ -159,6 +317,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .btn-danger{padding:9px 20px;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
 .btn-danger:hover{background:#b91c1c;}
 .btn-cancel{padding:9px 14px;background:transparent;color:var(--text-secondary);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;cursor:pointer;}
+.btn-outline{padding:7px 14px;background:var(--surface);color:var(--text-secondary);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
 .confirm-detail{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .confirm-detail:last-of-type{border-bottom:none;}
 .confirm-label{color:var(--text-secondary);}
@@ -170,57 +330,28 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 /* ─── Settings Modal ─── */
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
 .settings-overlay.open{display:flex;}
-.settings-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:modalIn .2s ease;overflow:hidden;}
+.settings-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.18);animation:modalIn .2s ease;overflow:hidden;}
 @keyframes modalIn{from{transform:scale(.95);opacity:0;}to{transform:scale(1);opacity:1;}}
 .settings-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;}
-.modal-close-x{background:none;border:none;font-size:16px;line-height:1;cursor:pointer;padding:3px 7px;border-radius:var(--radius-sm);color:var(--red);transition:background .15s;}
-.modal-close-x:hover{background:var(--red-light);}
-.settings-modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.settings-modal-body{padding:20px;display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto;}
 .settings-field{display:flex;flex-direction:column;gap:5px;}
 .settings-label{font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;}
 .settings-input{border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:9px 11px;font-family:var(--font-mono);font-size:12px;color:var(--text-primary);outline:none;width:100%;direction:ltr;background:var(--surface);transition:border-color .15s;}
 .settings-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.settings-static{font-family:var(--font-mono);font-size:11.5px;direction:ltr;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;word-break:break-all;}
 .settings-modal-ftr{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
-
-/* ─── Changelog Modal ─── */
-.changelog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
-.changelog-overlay.open{display:flex;}
-.changelog-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
-.changelog-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;flex-shrink:0;}
-.changelog-body{overflow-y:auto;padding:20px;flex:1;}
-.cl-version-block{margin-bottom:4px;}
-.cl-version-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.cl-ver-badge{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:3px 10px;border-radius:5px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;direction:ltr;}
-.cl-ver-badge.old{background:var(--surface-2);color:var(--text-secondary);border-color:var(--border-strong);}
-.cl-ver-date{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);direction:ltr;}
-.cl-items{list-style:none;display:flex;flex-direction:column;gap:5px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--border);}
-.cl-version-block:last-child .cl-items{border-bottom:none;padding-bottom:0;margin-bottom:0;}
-.cl-item{display:flex;gap:8px;font-size:13px;}
-.cl-tag{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-top:2px;}
-.cl-tag.new{background:#f0fdf4;color:#15803d;}
-.cl-tag.fix{background:#fef2f2;color:#b91c1c;}
-.cl-tag.change{background:#eff6ff;color:#1d4ed8;}
-
-/* ─── About Modal ─── */
-.about-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
-.about-overlay.open{display:flex;}
-.about-modal{background:var(--surface);border-radius:var(--radius);width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden;}
-.about-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;flex-shrink:0;}
-.about-body{overflow-y:auto;padding:16px 20px;flex:1;font-size:13px;}
-.about-body details{border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;}
-.about-body summary{padding:11px 14px;font-weight:700;cursor:pointer;background:var(--surface-2);}
-.about-body .about-section-content{padding:14px;display:flex;flex-direction:column;gap:10px;}
-.about-body h4{font-size:12px;font-weight:700;color:var(--accent);margin-top:4px;}
-.about-body ol,.about-body ul{padding-inline-start:20px;display:flex;flex-direction:column;gap:4px;}
-.about-body code{font-family:var(--font-mono);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11px;direction:ltr;display:inline-block;}
-.about-body table{width:100%;border-collapse:collapse;font-size:12px;}
-.about-body th,.about-body td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;}
+.diag-line{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;line-height:1.65;}
+.diag-line .ico{flex-shrink:0;}
+.diag-line.bad{color:var(--red);}
+.diag-line.good{color:var(--text-secondary);}
+.diag-env{font-family:var(--font-mono);font-size:10.5px;direction:ltr;text-align:left;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-top:8px;white-space:pre-wrap;}
 
 /* ─── Toast ─── */
 .toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
-.toast{padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:toastIn .3s ease;max-width:320px;}
+.toast{padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:toastIn .3s ease;max-width:340px;}
 .toast-success{background:var(--green);}
 .toast-error{background:var(--red);}
+.toast-warning{background:var(--amber);}
 .toast-neutral{background:#1a1d27;}
 @keyframes toastIn{from{transform:translateX(100%);opacity:0;}to{transform:none;opacity:1;}}
 
@@ -233,6 +364,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 .login-settings-btn.ready{border-color:var(--green);color:var(--green);background:var(--green-light);}
 .login-settings-btn.missing{border-color:var(--red);color:var(--red);background:var(--red-light);}
 .login-settings-btn:hover{transform:translateY(-1px);}
+.login-version{position:absolute;top:58px;left:17px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.2px;user-select:none;}
 .login-top{padding-top:12px;display:flex;flex-direction:column;align-items:center;text-align:center;}
 .login-icon{font-size:34px;line-height:1;margin-bottom:14px;}
 .login-title{font-size:19px;font-weight:900;letter-spacing:-.1px;}
@@ -284,29 +416,42 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 <div class="container">
 
   <!-- ══════════════════════════════════════════════════════
-       §SHELL — header
+       §SHELL — header + main tabs (Freeze on Scroll wrapper)
        ══════════════════════════════════════════════════════ -->
-  <div class="app-header">
-    <div class="app-title">
-      <div class="app-icon">👥</div>
-      <div class="app-title-text">
-        <h1>إدارة الموظفين</h1>
-        <span>EcomModa — Admin Panel</span>
+  <div class="sticky-header-wrap" id="stickyWrap">
+
+    <div class="app-header">
+      <div class="app-title">
+        <div class="app-icon">👥</div>
+        <div class="app-title-text">
+          <h1>إدارة الموظفين</h1>
+          <span>EcomModa — Admin Panel</span>
+        </div>
+      </div>
+
+      <!-- Chip التاب الحالي — ما يظهرش إلا وقت الـ Sticky -->
+      <div class="active-tab-chip" id="activeTabChip" onclick="toggleTabChipMenu(event)">
+        <span id="activeTabChipLabel">👤 الموظفون</span><span class="chip-arrow">▾</span>
+        <div class="tab-chip-menu" id="tabChipMenu"></div>
+      </div>
+
+      <div class="app-header-btns">
+        <button class="hbtn active-user" id="userBtn" onclick="doLogout()" style="display:none;"></button>
+        <button class="hbtn" id="verMismatchBtn" style="display:none;border-color:var(--amber);color:var(--amber);background:var(--amber-light);"
+                onclick="showVersionMismatch()">⚠️ نسخة الـ Worker مختلفة</button>
+        <button class="hbtn" id="aboutBtn" onclick="openAbout()">ℹ️ عن الأداة</button>
+        <!-- النص بيتملّى من renderVersionUI() من TOOL_VERSION — ممنوع hardcode -->
+        <button class="hbtn ver-btn" id="verBtn" onclick="openChangelog()"></button>
+        <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
       </div>
     </div>
-    <div class="app-header-btns">
-      <button class="hbtn active-user" id="userBtn" onclick="doLogout()" style="display:none;"></button>
-      <button class="hbtn" id="aboutBtn" onclick="openAbout()">ℹ️ عن الأداة</button>
-      <button class="hbtn ver-btn" onclick="openChangelog()">v2.1.2 📋</button>
-      <button class="hbtn" id="settingsBtn" onclick="openSettings()">⚙️ الإعدادات</button>
-    </div>
-  </div>
 
-  <!-- ─── Tabs (تظهر بعد تسجيل الدخول) ─── -->
-  <div class="tabs-bar">
-    <button class="tab-btn active" id="tabEmp" onclick="switchTab('employees')">👤 الموظفون</button>
-    <button class="tab-btn" id="tabLog" onclick="switchTab('log')">📋 سجل الدخول والخروج</button>
-    <button class="tab-btn" id="tabAudit" onclick="switchTab('audit')">📝 سجل الإجراءات الإدارية</button>
+    <div class="main-tabs-bar" id="mainTabsBar">
+      <button class="main-tab-btn active" id="tabEmp"   onclick="switchMainTab('employees')">👤 الموظفون</button>
+      <button class="main-tab-btn"        id="tabLog"   onclick="switchMainTab('log')">📋 سجل الدخول والخروج</button>
+      <button class="main-tab-btn"        id="tabAudit" onclick="switchMainTab('audit')">📝 سجل الإجراءات الإدارية</button>
+    </div>
+
   </div>
 
   <!-- ══════════════════════════════════════════════════════
@@ -322,86 +467,254 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
       </div>
     </div>
 
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <span class="toolbar-title">الموظفون</span>
-        <span class="count-badge" id="countBadge">—</span>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn-icon" id="refreshEmpBtn" onclick="loadEmployees()">
-          <span class="refresh-icon">↻</span> تحديث
-        </button>
-        <button class="btn-add" onclick="openAddModal()">＋ إضافة موظف</button>
-      </div>
-    </div>
+    <!-- ─── §TOOL::employeesSection — القسم الموحّد (فلاتر + جدول) ─── -->
+    <div class="unified-section">
 
-    <div class="table-card">
-      <table class="emp-table">
-        <thead>
-          <tr>
-            <th>الموظف</th>
-            <th style="text-align:center;">الحالة</th>
-            <th style="text-align:center;">PIN</th>
-            <th style="text-align:center;">صلاحية الإدارة</th>
-            <th>آخر دخول</th>
-            <th>تاريخ الإضافة</th>
-            <th style="text-align:center;">الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-          <tr><td colspan="7"><div class="state-box"><div class="state-icon">👥</div><div class="state-text">جارٍ التحميل...</div></div></td></tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="flt-header" onclick="toggleFilters('emp')">
+        <div class="flt-header-right">
+          <span class="flt-toggle open" id="fltToggleIcon-emp">▲</span>
+          <svg class="flt-icon" id="fltIcon-emp" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
+            <line x1="18" y1="5" x2="33" y2="5"></line>
+            <line x1="18" y1="11" x2="29" y2="11"></line>
+            <line x1="18" y1="17" x2="25" y2="17"></line>
+          </svg>
+        </div>
+        <button class="clear-btn inactive" id="clearAllBtn-emp" onclick="event.stopPropagation(); clearAllFilters('emp');">✕ مسح كل الفلاتر</button>
+      </div>
 
+      <div class="flt-body" id="fltBody-emp">
+
+        <div class="flt-row">
+          <div class="flt-g">
+            <span class="flt-label">الحالة</span>
+            <div class="ms-wrap" id="msWrap-empStatus">
+              <button class="ms-btn" id="msBtn-empStatus" onclick="msToggle('empStatus')"><span id="msBtnLabel-empStatus">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-empStatus">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('empStatus')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-empStatus"></span></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('empStatus')"><input type="checkbox" id="msSelectAll-empStatus" onclick="event.stopPropagation()" onchange="msToggleSelectAll('empStatus', this.checked)"><span id="msSelectAllLabel-empStatus">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-empStatus"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flt-g">
+            <span class="flt-label">PIN</span>
+            <div class="ms-wrap" id="msWrap-empPin">
+              <button class="ms-btn" id="msBtn-empPin" onclick="msToggle('empPin')"><span id="msBtnLabel-empPin">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-empPin">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('empPin')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-empPin"></span></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('empPin')"><input type="checkbox" id="msSelectAll-empPin" onclick="event.stopPropagation()" onchange="msToggleSelectAll('empPin', this.checked)"><span id="msSelectAllLabel-empPin">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-empPin"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flt-g">
+            <span class="flt-label">صلاحية الإدارة</span>
+            <div class="ms-wrap" id="msWrap-empAdmin">
+              <button class="ms-btn" id="msBtn-empAdmin" onclick="msToggle('empAdmin')"><span id="msBtnLabel-empAdmin">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-empAdmin">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('empAdmin')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-empAdmin"></span></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('empAdmin')"><input type="checkbox" id="msSelectAll-empAdmin" onclick="event.stopPropagation()" onchange="msToggleSelectAll('empAdmin', this.checked)"><span id="msSelectAllLabel-empAdmin">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-empAdmin"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- صف 2: بحث ← فترة سريعة ← من ← إلى (فلتر التاريخ على "تاريخ الإضافة") -->
+        <div class="flt-row">
+          <div class="flt-g" style="min-width:240px;">
+            <span class="flt-label">بحث بالاسم أو Username</span>
+            <div class="search-wrap">
+              <input type="text" class="search-input" id="searchInput-emp" oninput="onSearchInput('emp', this)" />
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">فترة سريعة (تاريخ الإضافة)</span>
+            <div class="range-preset-wrap" id="rangePresetWrap-emp">
+              <button class="range-preset-btn" id="rangePresetBtn-emp" onclick="toggleRangePresetMenu(event,'emp')"><span id="rangePresetLabel-emp">⚡ اختار فترة</span><span>▾</span></button>
+              <div class="range-preset-menu" id="rangePresetMenu-emp"></div>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">من تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateFrom-emp" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('emp')"></div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">إلى تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateTo-emp" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('emp')"></div>
+          </div>
+        </div>
+
+        <div class="ms-chips-row" id="chipsRow-empStatus"></div>
+        <div class="ms-chips-row" id="chipsRow-empPin"></div>
+        <div class="ms-chips-row" id="chipsRow-empAdmin"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="tbl-bar" onclick="toggleTable('emp')">
+        <div class="tbl-bar-right">
+          <span class="tbl-toggle open" id="tblToggleIcon-emp">▲</span>
+          <div class="results-wrap"><span class="results-label">النتائج:</span><span class="results-count" id="filteredCount-emp">—</span></div>
+        </div>
+        <div class="tbl-bar-left">
+          <button class="act-btn refresh" id="refreshEmpBtn" onclick="event.stopPropagation(); loadEmployees();"><span class="refresh-icon">↺</span> تحديث</button>
+          <button class="act-btn export" onclick="event.stopPropagation(); exportEmployeesXLSX();">⬇ تصدير XLSX</button>
+          <button class="act-btn add" onclick="event.stopPropagation(); openAddModal();">＋ إضافة موظف</button>
+        </div>
+      </div>
+
+      <div class="tbl-body-wrap" id="tblBodyWrap-emp">
+        <div class="tbl-scroll">
+          <table class="data-table">
+            <thead><tr>
+              <th class="sortable-th" data-sort-key="name"      onclick="toggleSort('emp','name')">الموظف<span class="sort-icon" data-sort-key="name"></span></th>
+              <th class="sortable-th" data-sort-key="status"    onclick="toggleSort('emp','status')">الحالة<span class="sort-icon" data-sort-key="status"></span></th>
+              <th class="sortable-th" data-sort-key="pin"       onclick="toggleSort('emp','pin')">PIN<span class="sort-icon" data-sort-key="pin"></span></th>
+              <th class="sortable-th" data-sort-key="admin"     onclick="toggleSort('emp','admin')">صلاحية الإدارة<span class="sort-icon" data-sort-key="admin"></span></th>
+              <th class="sortable-th" data-sort-key="loginDate" onclick="toggleSort('emp','loginDate')">تاريخ آخر دخول<span class="sort-icon" data-sort-key="loginDate"></span></th>
+              <th class="sortable-th" data-sort-key="loginTime" onclick="toggleSort('emp','loginTime')">وقت آخر دخول<span class="sort-icon" data-sort-key="loginTime"></span></th>
+              <th class="sortable-th" data-sort-key="created"   onclick="toggleSort('emp','created')">تاريخ الإضافة<span class="sort-icon" data-sort-key="created"></span></th>
+              <th>الإجراءات</th>
+            </tr></thead>
+            <tbody id="tblBody-emp"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
   </div><!-- /panelEmployees -->
 
   <!-- ══════════════════════════════════════════════════════
-       §TOOL::accessLog — تبويب: سجل الدخول والخروج
+       §TOOL::accessLog — تبويب: سجل الدخول والخروج (كل الأدوات)
        ══════════════════════════════════════════════════════ -->
   <div class="tab-panel" id="panelLog">
 
-    <div class="log-filters">
-      <div class="log-filter-group">
-        <span class="log-filter-label">الموظف</span>
-        <select class="log-select" id="logFilterEmployee" onchange="loadLog()">
-          <option value="">الكل</option>
-        </select>
-      </div>
-      <div class="log-filter-group">
-        <span class="log-filter-label">الأداة</span>
-        <select class="log-select" id="logFilterTool" onchange="loadLog()">
-          <option value="">الكل</option>
-        </select>
-      </div>
-      <div class="log-filter-group">
-        <span class="log-filter-label">النوع</span>
-        <select class="log-select" id="logFilterType" onchange="loadLog()">
-          <option value="">دخول وخروج</option>
-          <option value="login">دخول فقط</option>
-          <option value="logout">خروج فقط</option>
-        </select>
-      </div>
-      <div class="log-filter-group">
-        <span class="log-filter-label">من تاريخ</span>
-        <input type="date" class="log-date" id="logDateFrom" onchange="loadLog()" onclick="this.showPicker&&this.showPicker();" />
-      </div>
-      <div class="log-filter-group">
-        <span class="log-filter-label">إلى تاريخ</span>
-        <input type="date" class="log-date" id="logDateTo" onchange="loadLog()" onclick="this.showPicker&&this.showPicker();" />
-      </div>
-      <div class="log-filter-group" style="justify-content:flex-end;">
-        <span class="log-filter-label">&nbsp;</span>
-        <button class="btn-icon" id="refreshLogBtn" onclick="loadLog()">
-          <span class="refresh-icon">↻</span> تحديث
-        </button>
-      </div>
+    <div class="info-card">
+      <span class="info-card-icon">ℹ️</span>
+      <div>سجل الدخول والخروج المركزي للستاك كله — بيقرا كل الـ tools مش هذه الأداة بس.</div>
     </div>
+    <div class="warn-banner" id="accCapBanner"></div>
 
-    <div class="log-card" id="logCard">
-      <div class="log-empty"><div class="log-empty-icon">📋</div>جارٍ التحميل...</div>
+    <div class="unified-section">
+
+      <div class="flt-header" onclick="toggleFilters('acc')">
+        <div class="flt-header-right">
+          <span class="flt-toggle open" id="fltToggleIcon-acc">▲</span>
+          <svg class="flt-icon" id="fltIcon-acc" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
+            <line x1="18" y1="5" x2="33" y2="5"></line>
+            <line x1="18" y1="11" x2="29" y2="11"></line>
+            <line x1="18" y1="17" x2="25" y2="17"></line>
+          </svg>
+        </div>
+        <button class="clear-btn inactive" id="clearAllBtn-acc" onclick="event.stopPropagation(); clearAllFilters('acc');">✕ مسح كل الفلاتر</button>
+      </div>
+
+      <div class="flt-body" id="fltBody-acc">
+        <div class="flt-row">
+          <div class="flt-g">
+            <span class="flt-label">الأداة</span>
+            <div class="ms-wrap" id="msWrap-accTool">
+              <button class="ms-btn" id="msBtn-accTool" onclick="msToggle('accTool')"><span id="msBtnLabel-accTool">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-accTool">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('accTool')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-accTool"></span></div>
+                <div class="ms-search-wrap"><input type="text" class="ms-search" id="msSearch-accTool" oninput="msFilterList('accTool', this.value)" placeholder="بحث..."></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('accTool')"><input type="checkbox" id="msSelectAll-accTool" onclick="event.stopPropagation()" onchange="msToggleSelectAll('accTool', this.checked)"><span id="msSelectAllLabel-accTool">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-accTool"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flt-g">
+            <span class="flt-label">النوع</span>
+            <div class="ms-wrap" id="msWrap-accType">
+              <button class="ms-btn" id="msBtn-accType" onclick="msToggle('accType')"><span id="msBtnLabel-accType">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-accType">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('accType')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-accType"></span></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('accType')"><input type="checkbox" id="msSelectAll-accType" onclick="event.stopPropagation()" onchange="msToggleSelectAll('accType', this.checked)"><span id="msSelectAllLabel-accType">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-accType"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flt-row">
+          <div class="flt-g" style="min-width:240px;">
+            <span class="flt-label">بحث بالموظف أو الملاحظات</span>
+            <div class="search-wrap">
+              <input type="text" class="search-input" id="searchInput-acc" oninput="onSearchInput('acc', this)" />
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">فترة سريعة</span>
+            <div class="range-preset-wrap" id="rangePresetWrap-acc">
+              <button class="range-preset-btn" id="rangePresetBtn-acc" onclick="toggleRangePresetMenu(event,'acc')"><span id="rangePresetLabel-acc">⚡ اختار فترة</span><span>▾</span></button>
+              <div class="range-preset-menu" id="rangePresetMenu-acc"></div>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">من تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateFrom-acc" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('acc')"></div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">إلى تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateTo-acc" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('acc')"></div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">الموظف</span>
+            <div class="ms-wrap" id="msWrap-accEmp">
+              <button class="ms-btn" id="msBtn-accEmp" onclick="msToggle('accEmp')"><span id="msBtnLabel-accEmp">كل الموظفين</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-accEmp">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('accEmp')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-accEmp"></span></div>
+                <div class="ms-search-wrap"><input type="text" class="ms-search" id="msSearch-accEmp" oninput="msFilterList('accEmp', this.value)" placeholder="بحث..."></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('accEmp')"><input type="checkbox" id="msSelectAll-accEmp" onclick="event.stopPropagation()" onchange="msToggleSelectAll('accEmp', this.checked)"><span id="msSelectAllLabel-accEmp">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-accEmp"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ms-chips-row" id="chipsRow-accTool"></div>
+        <div class="ms-chips-row" id="chipsRow-accType"></div>
+        <div class="ms-chips-row" id="chipsRow-accEmp"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="tbl-bar" onclick="toggleTable('acc')">
+        <div class="tbl-bar-right">
+          <span class="tbl-toggle open" id="tblToggleIcon-acc">▲</span>
+          <div class="results-wrap"><span class="results-label">النتائج:</span><span class="results-count" id="filteredCount-acc">—</span></div>
+        </div>
+        <div class="tbl-bar-left">
+          <button class="act-btn refresh" id="refreshLogBtn" onclick="event.stopPropagation(); loadAccessLog();"><span class="refresh-icon">↺</span> تحديث</button>
+          <button class="act-btn export" onclick="event.stopPropagation(); exportAccessLogXLSX();">⬇ تصدير XLSX</button>
+        </div>
+      </div>
+
+      <div class="tbl-body-wrap" id="tblBodyWrap-acc">
+        <div class="tbl-scroll">
+          <table class="data-table">
+            <thead><tr>
+              <th class="sortable-th" data-sort-key="date" onclick="toggleSort('acc','date')">التاريخ<span class="sort-icon" data-sort-key="date"></span></th>
+              <th class="sortable-th" data-sort-key="time" onclick="toggleSort('acc','time')">الوقت<span class="sort-icon" data-sort-key="time"></span></th>
+              <th class="sortable-th" data-sort-key="emp"  onclick="toggleSort('acc','emp')">الموظف<span class="sort-icon" data-sort-key="emp"></span></th>
+              <th class="sortable-th" data-sort-key="type" onclick="toggleSort('acc','type')">النوع<span class="sort-icon" data-sort-key="type"></span></th>
+              <th class="sortable-th" data-sort-key="tool" onclick="toggleSort('acc','tool')">الأداة<span class="sort-icon" data-sort-key="tool"></span></th>
+              <th>التفاصيل</th>
+            </tr></thead>
+            <tbody id="tblBody-acc"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
-
   </div><!-- /panelLog -->
 
   <!-- ══════════════════════════════════════════════════════
@@ -411,39 +724,129 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 
     <div class="info-card">
       <span class="info-card-icon">ℹ️</span>
-      <div>سجل بكل إضافة / تعديل / إيقاف / تفعيل / حذف موظف — ومين عمل الإجراء ومتى.</div>
+      <div>سجل بكل إضافة / تعديل / إيقاف / تفعيل / حذف / منح أو سحب صلاحية — ومين عمل الإجراء ومتى.</div>
     </div>
+    <div class="warn-banner" id="audCapBanner"></div>
 
-    <div class="log-filters">
-      <div class="log-filter-group">
-        <span class="log-filter-label">الموظف (منفّذ الإجراء)</span>
-        <select class="log-select" id="auditFilterEmployee" onchange="loadAudit(0)">
-          <option value="">الكل</option>
-        </select>
+    <div class="unified-section">
+
+      <div class="flt-header" onclick="toggleFilters('aud')">
+        <div class="flt-header-right">
+          <span class="flt-toggle open" id="fltToggleIcon-aud">▲</span>
+          <svg class="flt-icon" id="fltIcon-aud" viewBox="0 0 36 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="2 3 13 3 8.3 10.2 8.3 19 6.7 19 6.7 10.2 2 3"></polygon>
+            <line x1="18" y1="5" x2="33" y2="5"></line>
+            <line x1="18" y1="11" x2="29" y2="11"></line>
+            <line x1="18" y1="17" x2="25" y2="17"></line>
+          </svg>
+        </div>
+        <button class="clear-btn inactive" id="clearAllBtn-aud" onclick="event.stopPropagation(); clearAllFilters('aud');">✕ مسح كل الفلاتر</button>
       </div>
-      <div class="log-filter-group">
-        <span class="log-filter-label">بحث</span>
-        <input type="text" class="log-search" id="auditSearch" placeholder="اسم موظف أو username..." oninput="debounceAudit()" />
+
+      <div class="flt-body" id="fltBody-aud">
+        <div class="flt-row">
+          <div class="flt-g">
+            <span class="flt-label">نوع الإجراء</span>
+            <div class="ms-wrap" id="msWrap-audType">
+              <button class="ms-btn" id="msBtn-audType" onclick="msToggle('audType')"><span id="msBtnLabel-audType">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-audType">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('audType')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-audType"></span></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('audType')"><input type="checkbox" id="msSelectAll-audType" onclick="event.stopPropagation()" onchange="msToggleSelectAll('audType', this.checked)"><span id="msSelectAllLabel-audType">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-audType"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flt-g">
+            <span class="flt-label">الموظف المستهدف</span>
+            <div class="ms-wrap" id="msWrap-audTarget">
+              <button class="ms-btn" id="msBtn-audTarget" onclick="msToggle('audTarget')"><span id="msBtnLabel-audTarget">الكل</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-audTarget">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('audTarget')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-audTarget"></span></div>
+                <div class="ms-search-wrap"><input type="text" class="ms-search" id="msSearch-audTarget" oninput="msFilterList('audTarget', this.value)" placeholder="بحث..."></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('audTarget')"><input type="checkbox" id="msSelectAll-audTarget" onclick="event.stopPropagation()" onchange="msToggleSelectAll('audTarget', this.checked)"><span id="msSelectAllLabel-audTarget">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-audTarget"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flt-row">
+          <div class="flt-g" style="min-width:240px;">
+            <span class="flt-label">بحث في التفاصيل</span>
+            <div class="search-wrap">
+              <input type="text" class="search-input" id="searchInput-aud" oninput="onSearchInput('aud', this)" />
+              <span class="search-icon">🔍</span>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">فترة سريعة</span>
+            <div class="range-preset-wrap" id="rangePresetWrap-aud">
+              <button class="range-preset-btn" id="rangePresetBtn-aud" onclick="toggleRangePresetMenu(event,'aud')"><span id="rangePresetLabel-aud">⚡ اختار فترة</span><span>▾</span></button>
+              <div class="range-preset-menu" id="rangePresetMenu-aud"></div>
+            </div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">من تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateFrom-aud" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('aud')"></div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">إلى تاريخ</span>
+            <div class="range-date-wrap"><input type="date" id="rangeDateTo-aud" onclick="this.showPicker&&this.showPicker();" onchange="onDateChanged('aud')"></div>
+          </div>
+          <div class="flt-g">
+            <span class="flt-label">الموظف (منفّذ الإجراء)</span>
+            <div class="ms-wrap" id="msWrap-audEmp">
+              <button class="ms-btn" id="msBtn-audEmp" onclick="msToggle('audEmp')"><span id="msBtnLabel-audEmp">كل الموظفين</span><span class="ms-arrow">▾</span></button>
+              <div class="ms-menu" id="msMenu-audEmp">
+                <div class="ms-ftr-top"><button class="ms-ftr-clear" onclick="msClear('audEmp')">مسح الاختيار</button><span class="ms-ftr-count" id="msFtrCount-audEmp"></span></div>
+                <div class="ms-search-wrap"><input type="text" class="ms-search" id="msSearch-audEmp" oninput="msFilterList('audEmp', this.value)" placeholder="بحث..."></div>
+                <div class="ms-selectall-row" onclick="msToggleSelectAll('audEmp')"><input type="checkbox" id="msSelectAll-audEmp" onclick="event.stopPropagation()" onchange="msToggleSelectAll('audEmp', this.checked)"><span id="msSelectAllLabel-audEmp">تحديد الكل</span></div>
+                <div class="ms-list" id="msList-audEmp"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ms-chips-row" id="chipsRow-audType"></div>
+        <div class="ms-chips-row" id="chipsRow-audTarget"></div>
+        <div class="ms-chips-row" id="chipsRow-audEmp"></div>
       </div>
-      <div class="log-filter-group" style="justify-content:flex-end;">
-        <span class="log-filter-label">&nbsp;</span>
-        <button class="btn-icon" id="refreshAuditBtn" onclick="loadAudit(0)">
-          <span class="refresh-icon">↻</span> تحديث
-        </button>
+
+      <div class="section-divider"></div>
+
+      <div class="tbl-bar" onclick="toggleTable('aud')">
+        <div class="tbl-bar-right">
+          <span class="tbl-toggle open" id="tblToggleIcon-aud">▲</span>
+          <div class="results-wrap"><span class="results-label">النتائج:</span><span class="results-count" id="filteredCount-aud">—</span></div>
+        </div>
+        <div class="tbl-bar-left">
+          <button class="act-btn refresh" id="refreshAuditBtn" onclick="event.stopPropagation(); loadAudit();"><span class="refresh-icon">↺</span> تحديث</button>
+          <button class="act-btn export" onclick="event.stopPropagation(); exportAuditXLSX();">⬇ تصدير XLSX</button>
+        </div>
       </div>
-      <div class="log-filter-group" style="justify-content:flex-end;">
-        <span class="log-filter-label">&nbsp;</span>
-        <button class="btn-icon" onclick="exportAuditXLSX()">⬇ تصدير Excel</button>
+
+      <div class="tbl-body-wrap" id="tblBodyWrap-aud">
+        <div class="tbl-scroll">
+          <table class="data-table">
+            <thead><tr>
+              <th class="sortable-th" data-sort-key="date"   onclick="toggleSort('aud','date')">التاريخ<span class="sort-icon" data-sort-key="date"></span></th>
+              <th class="sortable-th" data-sort-key="time"   onclick="toggleSort('aud','time')">الوقت<span class="sort-icon" data-sort-key="time"></span></th>
+              <th class="sortable-th" data-sort-key="emp"    onclick="toggleSort('aud','emp')">الموظف (الفاعل)<span class="sort-icon" data-sort-key="emp"></span></th>
+              <th class="sortable-th" data-sort-key="type"   onclick="toggleSort('aud','type')">نوع الإجراء<span class="sort-icon" data-sort-key="type"></span></th>
+              <th class="sortable-th" data-sort-key="target" onclick="toggleSort('aud','target')">الموظف المستهدف<span class="sort-icon" data-sort-key="target"></span></th>
+              <th class="sortable-th" data-sort-key="result" onclick="toggleSort('aud','result')">النتيجة<span class="sort-icon" data-sort-key="result"></span></th>
+              <th>التفاصيل</th>
+            </tr></thead>
+            <tbody id="tblBody-aud"></tbody>
+          </table>
+        </div>
       </div>
+
     </div>
-
-    <div class="log-card" id="auditCard">
-      <div class="log-empty"><div class="log-empty-icon">📝</div>جارٍ التحميل...</div>
-    </div>
-
   </div><!-- /panelAudit -->
 
-</div><!-- /container -->
+</div><!-- /.container -->
 
 <!-- ══════════════════════════════════════════════════════
      §SHELL — Settings Modal
@@ -452,14 +855,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
   <div class="settings-modal">
     <div class="settings-modal-hdr">⚙️ الإعدادات <button class="modal-close-x" onclick="closeSettings()">✕</button></div>
     <div class="settings-modal-body">
+      <!-- ⛔ WORKER URL اتشال من هنا نهائيًا — بقى constant في §CONFIG
+           (html-builder Standards Changelog #28). السر وحده هو اللي بيتخزّن. -->
       <div class="settings-field">
-        <label class="settings-label">Worker URL</label>
-        <input class="settings-input" id="cfgUrl" type="text" />
-      </div>
-      <div class="settings-field">
-        <label class="settings-label">Worker Secret</label>
+        <label class="settings-label">WORKER SECRET</label>
         <input class="settings-input" id="cfgSecret" type="password" />
         <span class="field-hint">قيمة WORKER_SECRET الخاصة بهذا الـ Worker فقط</span>
+      </div>
+      <div class="settings-field">
+        <label class="settings-label">WORKER URL (ثابت — للعرض فقط)</label>
+        <div class="settings-static" id="cfgUrlStatic"></div>
+      </div>
+      <div class="settings-field" style="border-top:1.5px solid var(--border);padding-top:12px;">
+        <label class="settings-label">فحص النظام</label>
+        <button class="btn-outline" id="diagBtn" onclick="runDiag()">🩺 افحص الأداة والاتصالات</button>
+        <div id="diagResult" style="margin-top:10px;font-size:12px;line-height:1.7;"></div>
       </div>
     </div>
     <div class="settings-modal-ftr">
@@ -470,21 +880,48 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 </div>
 
 <!-- ══════════════════════════════════════════════════════
-     §SHELL — Changelog Modal
+     §SHELL — Changelog Modal (.eco-modal)
      ══════════════════════════════════════════════════════ -->
-<div class="changelog-overlay" id="changelogOverlay" onclick="closeChangelogOnBackdrop(event)">
-  <div class="changelog-modal">
-    <div class="changelog-modal-hdr">📋 سجل التحديثات <button class="modal-close-x" onclick="closeChangelog()">✕</button></div>
-    <div class="changelog-body">
+<div class="eco-overlay" id="changelogOverlay" onclick="if(event.target===this)closeChangelog()">
+  <div class="eco-modal">
+    <div class="eco-modal-hdr">
+      <span>📋 سجل التحديثات</span>
+      <button class="modal-close-x" onclick="closeChangelog()">✕</button>
+    </div>
+    <div class="eco-modal-body">
+
       <div class="cl-version-block">
         <div class="cl-version-row">
-          <span class="cl-ver-badge">v2.1.2</span>
+          <!-- النص بيتملّى من renderVersionUI() من TOOL_VERSION -->
+          <span class="cl-ver-badge" id="clLatestVerBadge"></span>
+          <span class="cl-ver-date">01-09-2026</span>
+        </div>
+        <ul class="cl-items">
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>التلات تابات بقت على معيار الجداول الموحّد: كارت واحد للفلاتر والجدول، فلاتر اختيار متعدد، ترتيب بضغطة على رأس العمود، وصف "النتائج" — وسجلّا الدخول والإجراءات بقوا جداول بدل البطاقات</li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span>فلتر فترة سريعة كامل (بما فيه "📅 شهر محدد") + من/إلى تاريخ في التلات تابات — بدون فترة افتراضية</li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span>تصدير XLSX لتاب الموظفين وتاب سجل الدخول (كان في تاب الإجراءات بس)</li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span>عمود "النتيجة" في سجل الإجراءات — الصفوف القديمة بتتعرض "—" مش "✓"، لأننا فعليًا مش عارفين نتيجتها</li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span>زرار 🩺 فحص النظام في الإعدادات (بينادي <code>diag</code>) + تحذير في الهيدر لو نسخة الـ Worker مختلفة عن نسخة الواجهة</li>
+          <li class="cl-item"><span class="cl-tag new">جديد</span>الهيدر وشريط التابات بيتقفلوا مع السكرول، وبيظهر chip باسم التاب الحالي للتبديل السريع</li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>رابط الـ Worker بقى ثابت في الكود بدل حقل إعدادات — الحماية في الـ SECRET والـ CORS مش في إخفاء الرابط. حقل الإعدادات الوحيد بقى WORKER SECRET</li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>رقم النسخة بقى مصدر واحد (<code>TOOL_VERSION</code>) بيملّى الهيدر وشاشة الدخول وبادج التحديثات</li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>صيغة التاريخ والوقت بقت موحّدة: 📅 DD/MM/YYYY 🕐 HH:MM صباحاً/مساءً — والتاريخ والوقت عمودين منفصلين في الجداول</li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>خط واحد بس (Noto Sans Arabic) — IBM Plex Mono اتشال، وعرض الأداة بقى 1400px</li>
+          <li class="cl-item"><span class="cl-tag change">تغيير</span>نوافذ "عن الأداة" و"سجل التحديثات" بقت بعرض 90% من عرض الأداة بهيدر ثابت، وكل أزرار الإغلاق ✕ بإطار أحمر</li>
+          <li class="cl-item"><span class="cl-tag fix">إصلاح</span>لو الإجراء نجح والسجل فشل، الأداة بتقول "تم — لكن ما اتسجّلش" بدل ما تعرض خطأ عام على عملية حصلت فعلاً</li>
+        </ul>
+      </div>
+
+      <div class="cl-version-block">
+        <div class="cl-version-row">
+          <span class="cl-ver-badge old">v2.1.2</span>
           <span class="cl-ver-date">09-08-2026</span>
         </div>
         <ul class="cl-items">
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span>صندوق رسالة الخطأ (loginAlert) كان جوه pin-zone المخفية قبل اختيار موظف — أي خطأ في تحميل قائمة الموظفين (CORS/الشبكة/إلخ) كان بيتكتب في عنصر مخفي ومايظهرش. اتنقل بره الـ pin-zone عشان يظهر دايماً</li>
         </ul>
       </div>
+
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge old">v2.1.1</span>
@@ -494,6 +931,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span>زرار الإعدادات في شاشة تسجيل الدخول كان بيفتح المودال لكنه بيترسم تحت شاشة الدخول (z-index 400 مقابل 500) — رُفع z-index كل المودالات (الإعدادات/التحديثات/عن الأداة/التأكيد) إلى 600</li>
         </ul>
       </div>
+
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge old">v2.1.0</span>
@@ -505,6 +943,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <li class="cl-item"><span class="cl-tag new">جديد</span>حماية: موظف مايقدرش يسحب صلاحية الإدارة من نفسه</li>
         </ul>
       </div>
+
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge old">v2.0.0</span>
@@ -517,13 +956,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <li class="cl-item"><span class="cl-tag change">تغيير</span>CORS بقى صارم (ALLOWED_ORIGINS) بدل الـ wildcard لأن الأداة بتكتب/تعدّل بيانات</li>
           <li class="cl-item"><span class="cl-tag new">جديد</span>تبويب "سجل الإجراءات الإدارية" — يسجّل كل إضافة/تعديل/إيقاف/تفعيل/حذف موظف ومين عمله، مع بحث وتصدير Excel</li>
           <li class="cl-item"><span class="cl-tag new">جديد</span>About Modal (ℹ️ عن الأداة)</li>
-          <li class="cl-item"><span class="cl-tag fix">إصلاح</span>الخط بقى IBM Plex Mono بدل JetBrains Mono</li>
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span>التوقيت بقى يُحسب عبر toCairo()‎ + getUTC*()‎ بدل getHours()‎ المحلي</li>
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span>حذف placeholder من حقول الإعدادات</li>
-          <li class="cl-item"><span class="cl-tag fix">إصلاح</span>حذف قاعدة CSS ميتة (.tool-labels) كانت متبقية بالغلط</li>
           <li class="cl-item"><span class="cl-tag fix">إصلاح</span>إضافة trailing-slash fix في كل نداءات apiGet/apiPost</li>
         </ul>
       </div>
+
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge old">v1.1.0</span>
@@ -533,6 +971,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <li class="cl-item"><span class="cl-tag new">جديد</span>تبويب "سجل الدخول والخروج"</li>
         </ul>
       </div>
+
       <div class="cl-version-block">
         <div class="cl-version-row">
           <span class="cl-ver-badge old">v1.0.0</span>
@@ -542,37 +981,49 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
           <li class="cl-item"><span class="cl-tag new">جديد</span>إصدار أولي</li>
         </ul>
       </div>
+
     </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
-     §SHELL — About Modal
+     §SHELL — About Modal (.eco-modal)
      ══════════════════════════════════════════════════════ -->
-<div class="about-overlay" id="aboutOverlay" onclick="closeAboutOnBackdrop(event)">
-  <div class="about-modal">
-    <div class="about-modal-hdr">ℹ️ About — إدارة الموظفين <button class="modal-close-x" onclick="closeAbout()">✕</button></div>
-    <div class="about-body">
+<div class="eco-overlay" id="aboutOverlay" onclick="if(event.target===this)closeAbout()">
+  <div class="eco-modal">
+    <div class="eco-modal-hdr">
+      <span>ℹ️ About — إدارة الموظفين</span>
+      <button class="modal-close-x" onclick="closeAbout()">✕</button>
+    </div>
+    <div class="eco-modal-body">
 
-      <details open>
+      <details class="about-sec" open>
         <summary>📋 وصف الأداة</summary>
-        <div class="about-section-content">
+        <div class="about-sec-body">
           <p><strong>الهدف:</strong> نقطة إدارة مركزية لحسابات الموظفين المستخدَمة في كل أدوات EcomModa —
-          إضافة، تعديل الاسم، إيقاف/تفعيل، مسح PIN، وحذف نهائي. أي تغيير هنا ينعكس فوراً على كل الأدوات
-          لأنهم كلهم بيقروا من نفس جدول <code>employees</code> في D1 المشترك.</p>
+          إضافة، تعديل الاسم، إيقاف/تفعيل، مسح PIN، منح/سحب صلاحية إدارة، وحذف نهائي. أي تغيير هنا
+          ينعكس فوراً على كل الأدوات لأنهم كلهم بيقروا من نفس جدول <code>employees</code> في D1 المشترك.</p>
+
           <p><strong>المستخدمون المستهدفون:</strong> الموظفون المصرّح لهم بإدارة الحسابات فقط (عمود <code>is_admin = 1</code>
           في جدول employees). أي موظف نشط لكن <code>is_admin = 0</code> يقدر يسجّل دخول في باقي الأدوات عادي، لكن هذه
           الأداة تحديداً هترفضه برسالة "هذا الحساب غير مصرّح له بالدخول على أداة إدارة الموظفين".</p>
+
           <h4>كيف تعمل — Workflow</h4>
           <ol>
-            <li>الموظف يسجّل دخول بالـ PIN بتاعه (زي أي أداة تانية).</li>
-            <li>تبويب "الموظفون" — عرض/إضافة/تعديل/إيقاف/تفعيل/مسح PIN/حذف.</li>
-            <li>تبويب "سجل الدخول والخروج" — عرض كل عمليات الدخول/الخروج من كل الأدوات (عبر D1 المشترك).</li>
-            <li>تبويب "سجل الإجراءات الإدارية" — سجل تدقيق (audit) لكل إجراء إداري تم في هذه الأداة نفسها، مع اسم منفّذ الإجراء.</li>
+            <li>الموظف يسجّل دخول بالـ PIN بتاعه (زي أي أداة تانية) — والأداة بتتأكد من <code>is_admin</code> مرتين: تحذير مبكر قبل الـ PIN، ورفض نهائي بعده.</li>
+            <li>تبويب "الموظفون" — عرض/إضافة/تعديل/إيقاف/تفعيل/مسح PIN/منح أو سحب صلاحية/حذف، مع فلاتر وترتيب وتصدير XLSX.</li>
+            <li>تبويب "سجل الدخول والخروج" — كل عمليات الدخول/الخروج من <strong>كل</strong> الأدوات (عبر D1 المشترك)، مفلترة بالتاريخ من السيرفر وباقي الفلاتر في الواجهة.</li>
+            <li>تبويب "سجل الإجراءات الإدارية" — سجل تدقيق (audit) لكل إجراء إداري تم في هذه الأداة نفسها، مع اسم منفّذ الإجراء والموظف المستهدف ونتيجة الإجراء.</li>
           </ol>
+
           <h4>الـ Endpoints الرئيسية</h4>
           <table>
             <tr><th>action</th><th>الوصف</th></tr>
+            <tr><td><code>get_config</code></td><td>نسخة الـ Worker — الواجهة بتقارنها بنسختها وتحذّر لو مختلفة (Promote ناقص / Worker شبح)</td></tr>
+            <tr><td><code>diag</code></td><td>فحص ذاتي بدون كتابة: أسماء المتغيّرات وأطوالها (بدون قيم) · اتصال D1 · عدد الموظفين والأدمن · الـ Origin</td></tr>
+            <tr><td><code>check_employee</code></td><td>هل الموظف موجود ونشط وعنده PIN وعنده صلاحية إدارة (تحذير مبكر قبل الـ PIN)</td></tr>
+            <tr><td><code>register_pin</code> / <code>verify_employee</code></td><td>تسجيل PIN أول مرة / تسجيل الدخول (PIN في الـ body دايمًا)</td></tr>
+            <tr><td><code>log_logout</code></td><td>تسجيل الخروج في D1</td></tr>
             <tr><td><code>get_employees</code></td><td>قائمة الموظفين النشطين (dropdown تسجيل الدخول)</td></tr>
             <tr><td><code>list_employees</code></td><td>قائمة كاملة بالتفاصيل لتبويب الموظفين</td></tr>
             <tr><td><code>add_employee</code></td><td>إضافة موظف جديد</td></tr>
@@ -581,33 +1032,73 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
             <tr><td><code>reset_pin</code></td><td>مسح PIN لإعادة التسجيل</td></tr>
             <tr><td><code>delete_employee</code></td><td>حذف نهائي</td></tr>
             <tr><td><code>grant_admin</code> / <code>revoke_admin</code></td><td>منح/سحب صلاحية إدارة (is_admin)</td></tr>
-            <tr><td><code>get_access_log</code></td><td>سجل دخول/خروج عبر كل الأدوات</td></tr>
+            <tr><td><code>get_access_log</code></td><td>سجل دخول/خروج عبر كل الأدوات (فلترة تاريخ + limit من السيرفر)</td></tr>
             <tr><td><code>get_logs</code> / <code>get_logs_count</code> / <code>get_logs_export</code></td><td>سجل الإجراءات الإدارية (audit) لهذه الأداة</td></tr>
+          </table>
+
+          <h4>⚙️ إجراءات كل خيار</h4>
+          <table>
+            <tr><th>الإجراء</th><th>الإجراءات التي تُنفَّذ</th></tr>
+            <tr><td><code>إضافة موظف</code></td><td>INSERT في <code>employees</code> ← ضبط <code>is_admin</code> حسب الـ checkbox ← صف <code>add_employee</code> في <code>logs</code></td></tr>
+            <tr><td><code>تعديل الاسم</code></td><td>قراءة الاسم القديم ← UPDATE <code>display_name</code> ← صف <code>update_display_name</code> فيه القيمة قبل وبعد</td></tr>
+            <tr><td><code>إيقاف</code></td><td>UPDATE <code>is_active = 0</code> ← صف <code>disable_employee</code> (الموظف بيتمنع من كل الأدوات فورًا)</td></tr>
+            <tr><td><code>تفعيل</code></td><td>UPDATE <code>is_active = 1</code> ← صف <code>enable_employee</code></td></tr>
+            <tr><td><code>مسح PIN</code></td><td>UPDATE <code>pin = NULL</code> ← صف <code>reset_pin</code> (الموظف هيسجّل PIN جديد أول دخول)</td></tr>
+            <tr><td><code>منح صلاحية إدارة</code></td><td>UPDATE <code>is_admin = 1</code> ← صف <code>grant_admin</code></td></tr>
+            <tr><td><code>سحب صلاحية إدارة</code></td><td>رفض لو الفاعل = الهدف ← UPDATE <code>is_admin = 0</code> ← صف <code>revoke_admin</code></td></tr>
+            <tr><td><code>حذف نهائي</code></td><td>قراءة الاسم المعروض قبل الحذف ← DELETE من <code>employees</code> ← صف <code>delete_employee</code> (لا رجعة فيه)</td></tr>
           </table>
         </div>
       </details>
 
-      <details>
+      <details class="about-sec">
         <summary>🔧 تشريح الكود</summary>
-        <div class="about-section-content">
-          <h4>FEATURE MAP</h4>
+        <div class="about-sec-body">
+          <h4>FEATURE MAP — الـ Worker (<code>index.js</code>)</h4>
           <ul>
-            <li><code>§AUTH</code> — Universal D1 Auth (check_employee / register_pin / verify_employee / log_logout / get_employees)</li>
-            <li><code>§ADMIN</code> — إدارة الموظفين (list/add/update/disable/enable/reset_pin/delete) + get_access_log</li>
-            <li><code>§LOG-ENDPOINTS</code> — get_logs / get_logs_count / get_logs_export (سجل الإجراءات الإدارية)</li>
+            <li><code>§CONSTANTS</code> — <code>TOOL_NAME</code> · <code>WORKER_VERSION</code> · <code>ADMIN_ACTIONS</code> (٨ إجراءات)</li>
+            <li><code>§CORS</code> — Option B صارم، <code>ALLOWED_ORIGINS</code> فيه دومين واحد بس</li>
+            <li><code>§HELPERS</code> — <code>json</code> · <code>validUsername</code> · <code>assertEnv</code> · <code>logSafe</code></li>
+            <li><code>§SHARED</code> — دوال الـ Auth والـ Logging المشتركة (منسوخة حرفيًا، ممنوع تعديلها)</li>
+            <li><code>§DIAG</code> — <code>get_config</code> / <code>diag</code></li>
+            <li><code>§AUTH</code> — check_employee / register_pin / verify_employee / log_logout / get_employees</li>
+            <li><code>§ADMIN</code> — list/add/update/disable/enable/reset_pin/delete/grant/revoke + get_access_log</li>
+            <li><code>§LOG-ENDPOINTS</code> — get_logs / get_logs_count / get_logs_export</li>
           </ul>
+
+          <h4>FEATURE MAP — الواجهة (<code>index.html</code>)</h4>
+          <ul>
+            <li><code>§CONFIG</code> — <code>WORKER_URL</code> ثابت · <code>LS_SECRET</code> · <code>apiRequest/apiGet/apiPost</code></li>
+            <li><code>§SHELL-JS</code> — <code>TOOL_VERSION</code> · <code>renderVersionUI</code> · الإعدادات · <code>runDiag</code> · <code>checkWorkerVersion</code> · دوال التاريخ</li>
+            <li><code>§AUTH-JS</code> — شاشة الدخول بأربع حالات (employee / existing / new / confirm)</li>
+            <li><code>§TABLE-JS</code> — المحرّك الموحّد للجداول التلاتة: multi-select · فترة سريعة · بحث · ترتيب · chips · طي</li>
+            <li><code>§TOOL-JS</code> — التابات + جدول الموظفين + مودالات الإضافة/التعديل/التأكيد</li>
+            <li><code>§LOG-JS</code> — سجل الدخول والخروج · <code>§LOG-JS::audit</code> سجل الإجراءات</li>
+          </ul>
+
           <h4>KEY VARIABLES</h4>
           <ul>
-            <li><code>currentEmployee</code> — { username, displayName } في الذاكرة فقط، بيُبعت كـ <code>actor</code> مع كل إجراء إداري للتدقيق</li>
+            <li><code>TOOL_VERSION</code> — نسخة الواجهة، المصدر الوحيد لرقم النسخة في الهيدر وشاشة الدخول وبادج التحديثات</li>
+            <li><code>WORKER_URL</code> — رابط الـ Worker كـ constant (مش حقل إعدادات ولا localStorage)</li>
+            <li><code>LS_SECRET = 'employees_admin_worker_secret'</code> — مفتاح localStorage الوحيد في الأداة</li>
+            <li><code>currentEmployee</code> — <code>{ username, displayName }</code> في الذاكرة فقط، بيُبعت كـ <code>actor</code> مع كل إجراء إداري للتدقيق</li>
             <li><code>TOOL_NAME = 'employees_admin'</code> — قيمة tool في جدول logs لهذه الأداة</li>
+            <li><code>TBL</code> — حالة الجداول التلاتة (<code>emp</code> / <code>acc</code> / <code>aud</code>): الصفوف، الترتيب، البحث، نطاق التاريخ</li>
+            <li><code>msState</code> — حالة كل فلتر اختيار متعدد، مفاتيحه مسبوقة باسم التاب عشان التلاتة يتعايشوا في نفس الصفحة</li>
           </ul>
-          <h4>NOTES</h4>
+
+          <h4>NOTES / QUIRKS</h4>
           <ul>
             <li>CORS صارم (ALLOWED_ORIGINS) — أداة كتابة/تعديل على بيانات حساسة.</li>
-            <li>WORKER_SECRET مطلوب على كل الـ endpoints من غير استثناء — حتى <code>get_employees</code>.</li>
-            <li>الدخول على هذه الأداة مقصور على <code>is_admin = 1</code> — التحقق بيحصل في <code>check_employee</code> (تحذير مبكر قبل الـ PIN) وفي <code>verify_employee</code> (تحقق نهائي، 403 لو مش admin).</li>
-            <li>عمود <code>is_admin</code> محتاج <code>ALTER TABLE</code> يدوي في D1 — مش جزء من الـ Worker code (انظر SETUP.txt).</li>
+            <li>WORKER_SECRET مطلوب على كل الـ endpoints من غير استثناء — حتى <code>get_employees</code>. الاستثناء الوحيد هو الـ OPTIONS preflight.</li>
+            <li>الدخول مقصور على <code>is_admin = 1</code> — التحقق في <code>check_employee</code> (تحذير مبكر) وفي <code>verify_employee</code> (403 نهائي).</li>
+            <li>عمود <code>is_admin</code> موجود بالفعل في D1 بتعريف <code>INTEGER NOT NULL DEFAULT 0</code> — أمر إنشائه مرجع لإعادة البناء بس، موثّق في <code>CLAUDE.md</code> §6.</li>
             <li>موظف مايقدرش يسحب صلاحية الإدارة من نفسه (حماية من قفل النفس بره الأداة).</li>
+            <li><strong>الفلترة هجينة في تاب سجل الدخول:</strong> نطاق التاريخ بيتبعت للسيرفر (السجل مركزي لكل الأدوات وممكن يكبر)، وباقي الفلاتر والعدّ في الواجهة على المحمّل فعليًا. لو وصل السقف (1000 صف) بيظهر بانر بيطلب تضييق الفترة.</li>
+            <li><strong>تاب الإجراءات بيحمّل السجل كامل</strong> عبر <code>get_logs_export</code> (سقف 2000) وبيفلتر ويعدّ في الواجهة — حجم السجل هنا صغير جدًا (إجراءات إدارية نادرة)، فالتقسيم لصفحات كان بيمنع العدّ والفلترة الصح.</li>
+            <li>عمود "النتيجة" بيقرا <code>extra.result</code>. أي صف قديم مالوش الحقل ده بيتعرض <strong>"—"</strong> مش "✓" — إحنا فعليًا مش عارفين نتيجته وقتها.</li>
+            <li>لو الإجراء نجح والكتابة في <code>logs</code> فشلت، الرد بيرجع <code>logged: false</code> والواجهة بتعرض تحذير أصفر — مش خطأ عام، لأن الفعل حصل فعلاً.</li>
+            <li>نسخة الـ Worker ونسخة الواجهة رقمين منفصلين معماريًا (قطعتين مختلفتين)، بس <code>checkWorkerVersion()</code> بتقارنهم عشان تكشف Promote ناقص — فلازم يتحدّثوا مع بعض في نفس التسليم.</li>
           </ul>
         </div>
       </details>
@@ -621,7 +1112,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
      ══════════════════════════════════════════════════════ -->
 <div class="overlay" id="addOverlay" onclick="closeOnBackdrop(event,'addOverlay')">
   <div class="modal">
-    <div class="modal-header">➕ إضافة موظف جديد <button class="modal-close" onclick="closeOverlay('addOverlay')">✕</button></div>
+    <div class="modal-header">➕ إضافة موظف جديد <button class="modal-close-x" onclick="closeOverlay('addOverlay')">✕</button></div>
     <div class="modal-body">
       <div class="modal-error" id="addError"></div>
       <div class="field-group">
@@ -654,7 +1145,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
      ══════════════════════════════════════════════════════ -->
 <div class="overlay" id="editOverlay" onclick="closeOnBackdrop(event,'editOverlay')">
   <div class="modal">
-    <div class="modal-header">✏️ تعديل الاسم <button class="modal-close" onclick="closeOverlay('editOverlay')">✕</button></div>
+    <div class="modal-header">✏️ تعديل الاسم <button class="modal-close-x" onclick="closeOverlay('editOverlay')">✕</button></div>
     <div class="modal-body">
       <div class="modal-error" id="editError"></div>
       <div class="field-group">
@@ -678,7 +1169,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
      ══════════════════════════════════════════════════════ -->
 <div class="overlay" id="confirmOverlay">
   <div class="modal">
-    <div class="modal-header" id="confirmHeader"></div>
+    <div class="modal-header"><span id="confirmHeader"></span><button class="modal-close-x" onclick="closeOverlay('confirmOverlay')">✕</button></div>
     <div class="modal-body" id="confirmBody"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeOverlay('confirmOverlay')">إلغاء</button>
@@ -696,6 +1187,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
     <button class="login-settings-btn missing" id="loginSettingsBtn" onclick="openSettings()">
       ⚙️ الإعدادات
     </button>
+    <!-- نص فقط، بدون onclick — قيمته من TOOL_VERSION عبر renderVersionUI() -->
+    <div class="login-version" id="loginVersionText"></div>
 
     <div class="login-top">
       <div class="login-icon">👥</div>
@@ -713,6 +1206,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
         <div class="login-status warn" id="loginStatus">الإعدادات غير مكتملة — افتح الإعدادات أولاً.</div>
       </div>
 
+      <!-- ⚠️ loginAlert بره pin-zone — عشان يظهر في الخطوة الأولى قبل اختيار الموظف -->
       <div class="login-alert" id="loginAlert"></div>
 
       <div class="pin-zone" id="pinZone">
@@ -748,85 +1242,143 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary)
 
 <script>
 // ══════════════════════════════════════════════════════
-// §CONFIG
+// §CONFIG — الرابط constant + السر localStorage + طبقة الـ API
 // ══════════════════════════════════════════════════════
-const LS_URL    = 'employees_admin_worker_url';
-const LS_SECRET = 'employees_admin_worker_secret';
+// ⛔ مفيش LS_URL — رابط الـ Worker مش سر (الحماية في WORKER_SECRET + CORS
+//    allowlist) واسمه بيتحدد وقت الإنشاء ومايتغيّرش. القيمة من CLAUDE.md
+//    بتاع الريبو. → html-builder Standards Changelog #28
+const WORKER_URL = 'https://employees-admin-panel-worker.ecommoda-dev.workers.dev';
+const LS_SECRET  = 'employees_admin_worker_secret';   // المفتاح الوحيد في localStorage
+const TOOL_NAME  = 'employees_admin';                 // قيمة tool في جدول logs
 
 function getConfig() {
   return {
-    workerUrl:    localStorage.getItem(LS_URL)    || '',
+    workerUrl:    WORKER_URL.replace(/\/$/, ''),
     workerSecret: localStorage.getItem(LS_SECRET) || '',
   };
 }
 function isConfigured() {
-  const c = getConfig();
-  return c.workerUrl.startsWith('http') && c.workerSecret.length > 0;
+  return getConfig().workerSecret.length > 0;
+}
+
+// ⚠️ apiRequest بتفرّق بين تلات حالات كانوا بيدّوا نفس الرسالة الغامضة:
+//    الـ Worker رد بخطأ · مقدرناش نوصله أصلاً (CORS/شبكة) · رد بحاجة مش JSON.
+async function apiRequest(url, opts) {
+  let resp;
+  try {
+    resp = await fetch(url, opts);
+  } catch (e) {
+    throw new Error(`تعذّر الوصول للـ Worker — راجع الاتصال أو نطاق الصفحة (CORS): ${e.message}`);
+  }
+  const text = await resp.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`رد غير متوقع من الـ Worker (HTTP ${resp.status}): ${text.slice(0, 160)}`); }
+  if (!resp.ok || data.ok === false) throw new Error(data.error || `HTTP ${resp.status}`);
+  return data;
 }
 
 async function apiPost(action, body = {}) {
-  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة'); }
+  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة — أدخل الـ WORKER SECRET'); }
   const { workerUrl, workerSecret } = getConfig();
-  const resp = await fetch(`${workerUrl.replace(/\/$/, '')}?action=${action}`, {
+  return apiRequest(`${workerUrl}?action=${action}`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${workerSecret}` },
     body:    JSON.stringify(body),
   });
-  const data = await resp.json();
-  if (!data.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-  return data;
 }
 
 async function apiGet(action, params = {}) {
-  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة'); }
+  if (!isConfigured()) { openSettings(); throw new Error('الإعدادات غير مكتملة — أدخل الـ WORKER SECRET'); }
   const { workerUrl, workerSecret } = getConfig();
-  const qs = new URLSearchParams({ action, ...params });
-  const resp = await fetch(`${workerUrl.replace(/\/$/, '')}?${qs}`, {
-    headers: { 'Authorization': `Bearer ${workerSecret}` },
-  });
-  const data = await resp.json();
-  if (!data.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-  return data;
+  const clean = {};
+  Object.entries(params).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== '') clean[k] = v; });
+  const qs = new URLSearchParams({ action, ...clean });
+  return apiRequest(`${workerUrl}?${qs}`, { headers: { 'Authorization': `Bearer ${workerSecret}` } });
 }
 
 // ══════════════════════════════════════════════════════
 // §SHELL-JS
 // ══════════════════════════════════════════════════════
+const TOOL_VERSION = 'v2.2.0';   // ← المصدر الوحيد لرقم النسخة في الواجهة
+
+// بيملّى: زرار الهيدر + بادج آخر نسخة في التحديثات + نص شاشة الدخول
+function renderVersionUI() {
+  const verBtn = document.getElementById('verBtn');
+  if (verBtn) verBtn.textContent = `${TOOL_VERSION} 📋`;
+  const clBadge = document.getElementById('clLatestVerBadge');
+  if (clBadge) clBadge.textContent = TOOL_VERSION;
+  const loginVer = document.getElementById('loginVersionText');
+  if (loginVer) loginVer.textContent = TOOL_VERSION;
+}
+
 function openSettings() {
-  const c = getConfig();
-  document.getElementById('cfgUrl').value    = c.workerUrl;
-  document.getElementById('cfgSecret').value = c.workerSecret;
+  document.getElementById('cfgSecret').value  = getConfig().workerSecret;
+  document.getElementById('cfgUrlStatic').textContent = WORKER_URL;
+  document.getElementById('diagResult').innerHTML = '';
   document.getElementById('settingsOverlay').classList.add('open');
 }
 function closeSettings()            { document.getElementById('settingsOverlay').classList.remove('open'); }
 function closeSettingsOnBackdrop(e) { if (e.target === e.currentTarget) closeSettings(); }
 
 function saveSettings() {
-  const url    = document.getElementById('cfgUrl').value.trim();
   const secret = document.getElementById('cfgSecret').value.trim();
-  if (!url || !secret) { showToast('الرجاء إدخال الـ URL والـ Secret', 'error'); return; }
-
-  // trailing-slash fix — إلزامي
-  localStorage.setItem(LS_URL,    url.replace(/\/$/, ''));
+  if (!secret) { showToast('الرجاء إدخال الـ WORKER SECRET', 'error'); return; }
   localStorage.setItem(LS_SECRET, secret);
-
   updateSettingsBtn();
-  updateLoginSettingsBtnState();
+  updateLoginSettingsBtn();
   closeSettings();
   showToast('تم حفظ الإعدادات ✓', 'success');
   loadEmployeesList();
+  checkWorkerVersion();
 }
 function updateSettingsBtn() {
   document.getElementById('settingsBtn').classList.toggle('settings-configured', isConfigured());
 }
 
-function openChangelog()             { document.getElementById('changelogOverlay').classList.add('open'); }
-function closeChangelog()            { document.getElementById('changelogOverlay').classList.remove('open'); }
-function closeChangelogOnBackdrop(e) { if (e.target === e.currentTarget) closeChangelog(); }
+// ── فحص ذاتي (🩺) — بينادي ?action=diag ──────────────────────
+// ⚠️ العرض ممنوع يعرض قيمة أي سر — الأسماء والأطوال بس.
+async function runDiag() {
+  const box = document.getElementById('diagResult');
+  const btn = document.getElementById('diagBtn');
+  btn.disabled = true;
+  box.innerHTML = '<span class="loading-spinner" style="width:16px;height:16px;"></span>';
+  try {
+    const d = await apiGet('diag');
+    const lines = (d.checks || []).map(c =>
+      `<div class="diag-line ${c.ok ? 'good' : 'bad'}"><span class="ico">${c.ok ? '✅' : '❌'}</span><span><b>${escapeHtml(c.name)}</b> — ${escapeHtml(c.detail)}</span></div>`
+    ).join('');
+    const verLine = `<div class="diag-line ${d.version === TOOL_VERSION ? 'good' : 'bad'}"><span class="ico">${d.version === TOOL_VERSION ? '✅' : '⚠️'}</span><span><b>النسخ</b> — الواجهة ${TOOL_VERSION} · الـ Worker ${escapeHtml(d.version || '؟')}${d.version === TOOL_VERSION ? '' : ' — راجع Promote في داشبورد Cloudflare'}</span></div>`;
+    const envList = (d.envKeys || []).map(k => `${k.name} : ${k.type}${k.length !== null ? ` (طول ${k.length})` : ''}`).join('\n');
+    box.innerHTML = lines + verLine + (envList ? `<div class="diag-env">${escapeHtml(envList)}</div>` : '');
+  } catch (e) {
+    box.innerHTML = `<div class="diag-line bad"><span class="ico">❌</span><span>${escapeHtml(e.message)}</span></div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
 
-function openAbout()             { document.getElementById('aboutOverlay').classList.add('open'); }
-function closeAbout()            { document.getElementById('aboutOverlay').classList.remove('open'); }
-function closeAboutOnBackdrop(e) { if (e.target === e.currentTarget) closeAbout(); }
+// ── نسخة الـ Worker مقابل نسخة الواجهة — بيكشف Promote ناقص / Worker شبح ──
+let workerVersion = null;
+async function checkWorkerVersion() {
+  // ⚠️ من غير الحارس ده، apiGet بيفتح مودال الإعدادات فوق شاشة الدخول أول
+  // تحميل للأداة على أي جهاز جديد — شاشة الدخول أصلاً بتقول إن الإعدادات ناقصة.
+  if (!isConfigured()) return;
+  try {
+    const d = await apiGet('get_config');
+    workerVersion = d.version || null;
+    const btn = document.getElementById('verMismatchBtn');
+    if (btn) btn.style.display = (workerVersion && workerVersion !== TOOL_VERSION) ? '' : 'none';
+  } catch { /* الإعدادات ممكن تكون لسه مش مضبوطة */ }
+}
+function showVersionMismatch() {
+  showToast(`نسخة الواجهة ${TOOL_VERSION} ونسخة الـ Worker ${workerVersion || '؟'} — غالبًا Promote ناقص في داشبورد Cloudflare`, 'warning', 7000);
+}
+
+function openChangelog()  { document.getElementById('changelogOverlay').classList.add('open'); }
+function closeChangelog() { document.getElementById('changelogOverlay').classList.remove('open'); }
+function openAbout()      { document.getElementById('aboutOverlay').classList.add('open'); }
+function closeAbout()     { document.getElementById('aboutOverlay').classList.remove('open'); }
 
 function showToast(msg, type = 'neutral', duration = 3000) {
   const t = document.createElement('div');
@@ -836,20 +1388,59 @@ function showToast(msg, type = 'neutral', duration = 3000) {
   setTimeout(() => t.remove(), duration);
 }
 
-// ── Cairo time (UTC+3) — إلزامي لكل عرض وقت ────────────────────
-function toCairo(iso) { return new Date(new Date(iso).getTime() + 3 * 60 * 60 * 1000); }
-function formatDateTime(iso) {
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ── Cairo time (UTC+3) — صيغة موحّدة (datetime-format.md) ──────
+function toCairo(iso)  { return new Date(new Date(iso).getTime() + 3 * 60 * 60 * 1000); }
+function cairoNow()    { return toCairo(new Date().toISOString()); }
+const pad2 = n => String(n).padStart(2, '0');
+
+function formatDateTime(iso) {   // نص عادي خارج الجداول
   if (!iso) return '—';
-  const d = toCairo(iso), pad = n => String(n).padStart(2, '0');
+  const d = toCairo(iso);
   let h = d.getUTCHours();
   const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
   h = h % 12 || 12;
-  return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth()+1)}-${d.getUTCFullYear()} الساعة ${pad(h)}:${pad(d.getUTCMinutes())} ${ampm}`;
+  return `📅 ${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth()+1)}/${d.getUTCFullYear()} 🕐 ${pad2(h)}:${pad2(d.getUTCMinutes())} ${ampm}`;
 }
-function formatDate(iso) {
+function formatDate(iso) {       // عمود "التاريخ" في الجداول
   if (!iso) return '—';
-  const d = toCairo(iso), pad = n => String(n).padStart(2, '0');
-  return `${pad(d.getUTCDate())}-${pad(d.getUTCMonth()+1)}-${d.getUTCFullYear()}`;
+  const d = toCairo(iso);
+  return `📅 ${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+}
+function formatTimeOnly(iso) {   // عمود "الوقت" المستقل — من نفس الـ iso مش من نص معروض
+  if (!iso) return '—';
+  const d = toCairo(iso);
+  let h = d.getUTCHours();
+  const ampm = h >= 12 ? 'مساءً' : 'صباحاً';
+  h = h % 12 || 12;
+  return `🕐 ${pad2(h)}:${pad2(d.getUTCMinutes())} ${ampm}`;
+}
+function formatDateForExport(iso) {  // XLSX فقط — بدون إيموجي
+  if (!iso) return '';
+  const d = toCairo(iso);
+  return `${pad2(d.getUTCDate())}-${pad2(d.getUTCMonth()+1)}-${d.getUTCFullYear()}`;
+}
+function formatTimeForExport(iso) {
+  if (!iso) return '';
+  const d = toCairo(iso);
+  let h = d.getUTCHours();
+  const ampm = h >= 12 ? 'م' : 'ص';
+  h = h % 12 || 12;
+  return `${pad2(h)}:${pad2(d.getUTCMinutes())} ${ampm}`;
+}
+function cairoYmd(iso) {         // YYYY-MM-DD بتوقيت القاهرة — للمقارنة مع فلتر التاريخ
+  if (!iso) return '';
+  const d = toCairo(iso);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
+}
+function ymdOf(dateObj) { return `${dateObj.getUTCFullYear()}-${pad2(dateObj.getUTCMonth()+1)}-${pad2(dateObj.getUTCDate())}`; }
+function addDays(ymd, n) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return ymdOf(dt);
 }
 
 function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
@@ -878,6 +1469,12 @@ function playBeep(type) {
       gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.25);
       osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.25);
+    } else if (type === 'warn') {
+      osc.frequency.setValueAtTime(620, _audioCtx.currentTime);
+      osc.frequency.setValueAtTime(520, _audioCtx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.3, _audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.3);
+      osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.3);
     } else {
       osc.frequency.setValueAtTime(300, _audioCtx.currentTime);
       osc.frequency.setValueAtTime(200, _audioCtx.currentTime + 0.15);
@@ -1000,8 +1597,8 @@ function pressPinKey(key) {
   if (isLoginBusy || loginMode === 'employee') return;
   clearTimeout(autoLoginTimer);
 
-  if      (key === 'clear')                          pinDigits = [];
-  else if (key === 'back')                            pinDigits.pop();
+  if      (key === 'clear')                            pinDigits = [];
+  else if (key === 'back')                             pinDigits.pop();
   else if (/^\d$/.test(key) && pinDigits.length < 4)   pinDigits.push(key);
 
   clearLoginAlert();
@@ -1046,8 +1643,7 @@ async function verifyExistingPin() {
   setLoginBusy(true, '⏳ جاري التحقق...');
   try {
     const data = await apiPost('verify_employee', { username, pin });
-    if (!data.ok) { await presentLoginPinError('PIN خطأ — حاول مرة أخرى'); return; }
-    await finishLogin(username, data.displayName);
+    await finishLogin(username, data.displayName, data.logged);
   } catch (err) {
     await presentLoginPinError(err.message || 'PIN خطأ');
   } finally {
@@ -1064,11 +1660,9 @@ async function registerNewPinAndLogin() {
   }
   setLoginBusy(true, '⏳ جاري التسجيل...');
   try {
-    const reg = await apiPost('register_pin', { username, pin: pendingNewPin });
-    if (reg && reg.ok === false) { await presentLoginPinError(reg.error || 'تعذّر تسجيل الـ PIN'); return; }
+    await apiPost('register_pin', { username, pin: pendingNewPin });
     const data = await apiPost('verify_employee', { username, pin: pendingNewPin });
-    if (!data.ok) { await presentLoginPinError(data.error || 'تعذّر تسجيل الدخول'); return; }
-    await finishLogin(username, data.displayName);
+    await finishLogin(username, data.displayName, data.logged);
   } catch (err) {
     await presentLoginPinError(err.message || 'تعذّر تسجيل الـ PIN');
   } finally {
@@ -1112,6 +1706,7 @@ function clearLoginAlert() {
   a.textContent = ''; a.classList.remove('visible');
 }
 
+// ⚠️ الحارس بيقرا settingsOverlay — الاسم settingsModal مش موجود في الـ DOM
 document.addEventListener('keydown', e => {
   const loginVisible = !document.getElementById('loginOverlay').classList.contains('hidden');
   const settingsOpen = document.getElementById('settingsOverlay').classList.contains('open');
@@ -1123,17 +1718,21 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Finish login — CUSTOMIZE: تحميل بيانات الأداة بعد الدخول ───
-async function finishLogin(username, displayName) {
+async function finishLogin(username, displayName, logged = true) {
   currentEmployee = { username, displayName };
   document.getElementById('loginOverlay').classList.add('hidden');
   showToast(`أهلاً ${displayName} 👋`, 'success');
   playBeep('success');
+  if (logged === false) {
+    showToast('تم الدخول — لكن الحدث ما اتسجّلش في D1', 'warning', 6000);
+    playBeep('warn');
+  }
 
   const userBtn = document.getElementById('userBtn');
   userBtn.textContent = `👤 ${displayName}`;
   userBtn.style.display = 'flex';
 
-  switchTab('employees');
+  switchMainTab('employees');
   await loadEmployees();
 }
 
@@ -1160,15 +1759,17 @@ async function doLogout() {
   renderLoginMode('employee');
   clearLoginAlert();
 
-  employees = [];
-  document.getElementById('tableBody').innerHTML = '';
-  document.getElementById('logCard').innerHTML = '';
-  document.getElementById('auditCard').innerHTML = '';
+  ['emp', 'acc', 'aud'].forEach(scope => {
+    TBL[scope].rows = [];
+    TBL[scope].loaded = false;
+    document.getElementById(`tblBody-${scope}`).innerHTML = '';
+    document.getElementById(`filteredCount-${scope}`).textContent = '—';
+  });
 
   document.getElementById('loginOverlay').classList.remove('hidden');
 }
 
-function updateLoginSettingsBtnState() {
+function updateLoginSettingsBtn() {
   const btn = document.getElementById('loginSettingsBtn');
   if (!btn) return;
   btn.classList.toggle('ready',   isConfigured());
@@ -1176,73 +1777,626 @@ function updateLoginSettingsBtnState() {
 }
 
 // ══════════════════════════════════════════════════════
-// §TOOL-JS — Tabs
+// §TABLE-JS — المحرّك الموحّد للقسم الموحّد (data-table-standard.md)
+// نسخة واحدة بتخدم التلات جداول عن طريق `scope`: emp / acc / aud
 // ══════════════════════════════════════════════════════
-let currentTab = 'employees';
-function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('tabEmp').classList.toggle('active', tab === 'employees');
-  document.getElementById('tabLog').classList.toggle('active', tab === 'log');
-  document.getElementById('tabAudit').classList.toggle('active', tab === 'audit');
-  document.getElementById('panelEmployees').classList.toggle('active', tab === 'employees');
-  document.getElementById('panelLog').classList.toggle('active', tab === 'log');
-  document.getElementById('panelAudit').classList.toggle('active', tab === 'audit');
-  if (tab === 'log')   loadLog();
-  if (tab === 'audit') loadAudit(0);
+
+// حالة كل جدول
+const TBL = {
+  emp: { rows: [], loaded: false, search: '', dateFrom: null, dateTo: null, dateFilterActive: false,
+         activePreset: '', sort: { key: null, dir: null }, fltOpen: true, tblOpen: true, msKeys: ['empStatus','empPin','empAdmin'] },
+  acc: { rows: [], loaded: false, search: '', dateFrom: null, dateTo: null, dateFilterActive: false,
+         activePreset: '', sort: { key: null, dir: null }, fltOpen: true, tblOpen: true, msKeys: ['accTool','accType','accEmp'] },
+  aud: { rows: [], loaded: false, search: '', dateFrom: null, dateTo: null, dateFilterActive: false,
+         activePreset: '', sort: { key: null, dir: null }, fltOpen: true, tblOpen: true, msKeys: ['audType','audTarget','audEmp'] },
+};
+
+// حالة كل فلتر اختيار متعدد — المفتاح مسبوق باسم التاب عشان التلاتة يتعايشوا
+const msState = {
+  empStatus: { scope: 'emp', items: [], selected: new Set(), search: '' },
+  empPin:    { scope: 'emp', items: [], selected: new Set(), search: '' },
+  empAdmin:  { scope: 'emp', items: [], selected: new Set(), search: '' },
+  accTool:   { scope: 'acc', items: [], selected: new Set(), search: '' },
+  accType:   { scope: 'acc', items: [], selected: new Set(), search: '' },
+  accEmp:    { scope: 'acc', items: [], selected: new Set(), search: '' },
+  audType:   { scope: 'aud', items: [], selected: new Set(), search: '' },
+  audTarget: { scope: 'aud', items: [], selected: new Set(), search: '' },
+  audEmp:    { scope: 'aud', items: [], selected: new Set(), search: '' },
+};
+
+const filterLabels = {
+  empStatus: 'الحالة', empPin: 'PIN', empAdmin: 'صلاحية الإدارة',
+  accTool: 'الأداة', accType: 'النوع', accEmp: 'الموظف',
+  audType: 'نوع الإجراء', audTarget: 'الموظف المستهدف', audEmp: 'الموظف',
+};
+
+// ─── §TABLE-JS::collapse ───
+function toggleFilters(scope) {
+  const st = TBL[scope];
+  st.fltOpen = !st.fltOpen;
+  document.getElementById(`fltBody-${scope}`).classList.toggle('collapsed', !st.fltOpen);
+  document.getElementById(`fltToggleIcon-${scope}`).classList.toggle('open', st.fltOpen);
 }
+function toggleTable(scope) {
+  const st = TBL[scope];
+  st.tblOpen = !st.tblOpen;
+  document.getElementById(`tblBodyWrap-${scope}`).classList.toggle('collapsed', !st.tblOpen);
+  document.getElementById(`tblToggleIcon-${scope}`).classList.toggle('open', st.tblOpen);
+}
+
+// ─── §TABLE-JS::anyFilterActive ───
+// ⚠️ فحص truthy (!!value) — مش `!== null`. الفلاتر بدون خصائص نطاق قيمتها
+// undefined، و`undefined !== null` بترجع true فتفضّل الأيقونة مفعّلة للأبد.
+function anyFilterActive(scope) {
+  const st = TBL[scope];
+  const msActive = st.msKeys.some(k => msState[k].selected.size > 0);
+  return msActive || st.search.trim().length > 0 || st.dateFilterActive;
+}
+function updateFilterIconState(scope) {
+  const active = anyFilterActive(scope);
+  document.getElementById(`fltIcon-${scope}`).classList.toggle('active', active);
+  document.getElementById(`clearAllBtn-${scope}`).classList.toggle('inactive', !active);
+}
+
+// ─── §TABLE-JS::multiSelect ───
+function msRenderList(key) {
+  const st = msState[key];
+  const listEl = document.getElementById(`msList-${key}`);
+  if (!listEl) return;
+  const q = st.search.trim().toLowerCase();
+  const visible = q ? st.items.filter(it => it.label.toLowerCase().includes(q)) : st.items;
+
+  listEl.innerHTML = !visible.length
+    ? '<div class="ms-empty">لا توجد نتائج مطابقة للبحث</div>'
+    : visible.map(it => {
+        const checked = st.selected.has(it.value);
+        const cls = it.mono ? 'ms-item-label ms-item-mono' : 'ms-item-label';
+        return `<div class="ms-item ${checked ? 'checked' : ''}" onclick="msToggleItem('${key}','${jsQuote(it.value)}')">
+          <input type="checkbox" ${checked ? 'checked' : ''} onclick="event.stopPropagation(); msToggleItem('${key}','${jsQuote(it.value)}')">
+          <span class="${cls}">${escapeHtml(it.label)}</span>
+        </div>`;
+      }).join('');
+
+  const allVisibleChecked = visible.length > 0 && visible.every(it => st.selected.has(it.value));
+  const saEl = document.getElementById(`msSelectAll-${key}`);
+  if (saEl) saEl.checked = allVisibleChecked;
+  const saLbl = document.getElementById(`msSelectAllLabel-${key}`);
+  if (saLbl) saLbl.textContent = q ? `تحديد كل نتائج البحث (${visible.length})` : 'تحديد الكل';
+  msUpdateButtonLabel(key);
+  const cnt = document.getElementById(`msFtrCount-${key}`);
+  if (cnt) cnt.textContent = `${st.selected.size} مختار`;
+}
+
+function jsQuote(v) { return String(v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+function msUpdateButtonLabel(key) {
+  const st  = msState[key];
+  const btn = document.getElementById(`msBtn-${key}`);
+  const lbl = document.getElementById(`msBtnLabel-${key}`);
+  const n   = st.selected.size;
+  btn.classList.toggle('has-selection', n > 0);
+  if (n === 0)      lbl.textContent = btn.dataset.defaultLabel || (key.endsWith('Emp') ? 'كل الموظفين' : 'الكل');
+  else if (n === 1) lbl.textContent = (st.items.find(i => i.value === [...st.selected][0])?.label) || [...st.selected][0];
+  else              lbl.innerHTML   = `${n} محددين <span class="ms-count">${n}</span>`;
+}
+
+function msToggle(key) {
+  const menu = document.getElementById(`msMenu-${key}`), btn = document.getElementById(`msBtn-${key}`);
+  const willOpen = !menu.classList.contains('open');
+  Object.keys(msState).forEach(k => {
+    document.getElementById(`msMenu-${k}`)?.classList.remove('open');
+    document.getElementById(`msBtn-${k}`)?.classList.remove('open');
+  });
+  if (willOpen) { menu.classList.add('open'); btn.classList.add('open'); }
+}
+
+// الاختيار مش بيقفل القائمة — المستخدم بيختار كذا عنصر ورا بعض
+function msToggleItem(key, value) {
+  const st = msState[key];
+  st.selected.has(value) ? st.selected.delete(value) : st.selected.add(value);
+  msRenderList(key); renderChips(st.scope); applyFilters(st.scope);
+}
+
+function msToggleSelectAll(key, forceState) {
+  const st = msState[key];
+  const q = st.search.trim().toLowerCase();
+  const visible = q ? st.items.filter(it => it.label.toLowerCase().includes(q)) : st.items;
+  const allChecked = visible.length > 0 && visible.every(it => st.selected.has(it.value));
+  const shouldCheck = forceState !== undefined ? forceState : !allChecked;
+  visible.forEach(it => shouldCheck ? st.selected.add(it.value) : st.selected.delete(it.value));
+  msRenderList(key); renderChips(st.scope); applyFilters(st.scope);
+}
+
+function msFilterList(key, value) { msState[key].search = value; msRenderList(key); }
+
+function msClear(key) {
+  const st = msState[key];
+  st.selected.clear();
+  msRenderList(key); renderChips(st.scope); applyFilters(st.scope);
+}
+
+// تعبئة عناصر فلتر من الداتا المحمّلة — بيحافظ على الاختيارات اللي لسه موجودة
+function msSetItems(key, items) {
+  const st = msState[key];
+  st.items = items;
+  const valid = new Set(items.map(i => i.value));
+  [...st.selected].forEach(v => { if (!valid.has(v)) st.selected.delete(v); });
+  msRenderList(key);
+}
+
+document.addEventListener('click', (e) => {
+  Object.keys(msState).forEach(k => {
+    const wrap = document.getElementById(`msWrap-${k}`);
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById(`msMenu-${k}`)?.classList.remove('open');
+      document.getElementById(`msBtn-${k}`)?.classList.remove('open');
+    }
+  });
+});
+
+// ─── §TABLE-JS::renderChips — سطر لكل فلتر، اسم الفلتر مرة واحدة ───
+function renderChips(scope) {
+  TBL[scope].msKeys.forEach(key => {
+    const row = document.getElementById(`chipsRow-${key}`);
+    if (!row) return;
+    const label = filterLabels[key] || key;
+    const chips = [...msState[key].selected].map(val => {
+      const item = msState[key].items.find(it => it.value === val);
+      const v = item ? item.label : val;
+      return `<span class="ms-chip">${escapeHtml(v)}<button onclick="msToggleItem('${key}','${jsQuote(val)}')">✕</button></span>`;
+    }).join('');
+    row.innerHTML = chips ? `<span class="chips-label">${label}:</span>${chips}` : '';
+  });
+}
+
+// ─── §TABLE-JS::search ───
+function toggleSearchActiveState(el) { el.classList.toggle('has-value', el.value.trim().length > 0); }
+const searchTimers = {};
+function onSearchInput(scope, el) {
+  toggleSearchActiveState(el);
+  clearTimeout(searchTimers[scope]);
+  searchTimers[scope] = setTimeout(() => { TBL[scope].search = el.value; applyFilters(scope); }, 300);
+}
+
+// ─── §TABLE-JS::dateRange (date-range-filter.md) ───
+const RANGE_PRESET_LABELS = {
+  today:'اليوم', yesterday:'أمس', last3:'آخر 3 أيام', last7:'آخر 7 أيام',
+  last30:'آخر 30 يوم', last90:'آخر 90 يوم', thisMonth:'الشهر الحالي',
+  lastMonth:'الشهر السابق', thisQuarter:'الربع الحالي', thisYear:'العام الحالي', lastYear:'العام السابق',
+};
+const RANGE_MONTH_NAMES = ['','يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+// القائمة الكاملة الإلزامية — "📅 شهر محدد" فوق "الشهر الحالي" مباشرة
+function presetMenuHTML(scope) {
+  const item = (p) => `<div class="range-preset-item" data-preset="${p}" onclick="applyRangePreset('${scope}','${p}')"><span>${RANGE_PRESET_LABELS[p]}</span><span class="pr-check">✓</span></div>`;
+  return `
+    <div class="range-preset-clear-row"><button onclick="clearRangePreset('${scope}')">✕ مسح الاختيار</button></div>
+    ${item('today')}${item('yesterday')}
+    <div class="range-preset-sep"></div>
+    ${item('last3')}${item('last7')}${item('last30')}${item('last90')}
+    <div class="range-preset-sep"></div>
+    <div class="range-preset-item has-sub" id="monthSpecificItem-${scope}" onclick="toggleMonthSubmenu(event,'${scope}')">
+      <span>📅 شهر محدد</span><span class="pr-sub-arrow">‹</span>
+      <div class="month-submenu" id="monthSubmenu-${scope}" onclick="event.stopPropagation();">
+        <div class="month-select-row">
+          <select class="month-select" id="monthSelectMonth-${scope}" onchange="onMonthYearChange('${scope}')">
+            <option value="">الشهر</option>
+            ${RANGE_MONTH_NAMES.slice(1).map((n, i) => `<option value="${i+1}">${n}</option>`).join('')}
+          </select>
+          <select class="month-select" id="monthSelectYear-${scope}" onchange="onYearSelectChange('${scope}')"></select>
+        </div>
+        <input type="number" class="month-select" id="monthSelectYearManual-${scope}" style="display:none;margin-top:8px;" oninput="onMonthYearChange('${scope}')">
+        <div class="month-select-hint">اختَر الشهر والسنة — يتطبّق الفلتر تلقائيًا بمجرد اختيار الاتنين. لسنة أقدم اختَر "سنة تانية..." واكتبها يدويًا.</div>
+      </div>
+    </div>
+    ${item('thisMonth')}${item('lastMonth')}${item('thisQuarter')}
+    <div class="range-preset-sep"></div>
+    ${item('thisYear')}${item('lastYear')}`;
+}
+
+function toggleRangePresetMenu(e, scope) {
+  e.stopPropagation();
+  const menu = document.getElementById(`rangePresetMenu-${scope}`);
+  const isOpen = menu.classList.contains('open');
+  ['emp','acc','aud'].forEach(s => document.getElementById(`rangePresetMenu-${s}`)?.classList.remove('open'));
+  menu.classList.toggle('open', !isOpen);
+}
+document.addEventListener('click', (e) => {
+  ['emp','acc','aud'].forEach(s => {
+    const wrap = document.getElementById(`rangePresetWrap-${s}`);
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById(`rangePresetMenu-${s}`)?.classList.remove('open');
+      closeMonthSubmenu(s);
+    }
+  });
+});
+
+function computePresetRange(preset) {
+  const now = cairoNow();
+  const today = ymdOf(now);
+  switch (preset) {
+    case 'today':      return { from: today, to: today };
+    case 'yesterday':  { const y = addDays(today, -1); return { from: y, to: y }; }
+    case 'last3':      return { from: addDays(today, -2),  to: today };
+    case 'last7':      return { from: addDays(today, -6),  to: today };
+    case 'last30':     return { from: addDays(today, -29), to: today };
+    case 'last90':     return { from: addDays(today, -89), to: today };
+    case 'thisMonth':  return { from: `${now.getUTCFullYear()}-${pad2(now.getUTCMonth()+1)}-01`, to: today };
+    case 'lastMonth': {
+      const firstThis = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      const lastPrev  = new Date(firstThis); lastPrev.setUTCDate(0);
+      const firstPrev = new Date(Date.UTC(lastPrev.getUTCFullYear(), lastPrev.getUTCMonth(), 1));
+      return { from: ymdOf(firstPrev), to: ymdOf(lastPrev) };
+    }
+    case 'thisQuarter': {
+      const q = Math.floor(now.getUTCMonth() / 3);
+      return { from: ymdOf(new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1))), to: today };
+    }
+    case 'thisYear':   return { from: `${now.getUTCFullYear()}-01-01`, to: today };
+    case 'lastYear':   { const y = now.getUTCFullYear() - 1; return { from: `${y}-01-01`, to: `${y}-12-31` }; }
+    default: return null;
+  }
+}
+
+function applyRangePreset(scope, preset) {
+  const st = TBL[scope];
+  const range = computePresetRange(preset);
+  if (!range) return;
+  resetMonthSpecific(scope);
+  st.activePreset = preset;
+  st.dateFrom = range.from; st.dateTo = range.to;
+  st.dateFilterActive = true;   // أي فترة يختارها المستخدم (حتى "اليوم") = فلتر مفعّل
+  document.getElementById(`rangeDateFrom-${scope}`).value = range.from;
+  document.getElementById(`rangeDateTo-${scope}`).value   = range.to;
+  document.getElementById(`rangePresetLabel-${scope}`).textContent = `⚡ ${RANGE_PRESET_LABELS[preset]}`;
+  document.getElementById(`rangePresetBtn-${scope}`).classList.add('has-preset');
+  document.querySelectorAll(`#rangePresetMenu-${scope} .range-preset-item`).forEach(el => el.classList.toggle('active', el.dataset.preset === preset));
+  document.getElementById(`rangePresetMenu-${scope}`).classList.remove('open');
+  onRangeApplied(scope);
+}
+
+const rangeDebounce = {};
+function onDateChanged(scope) {
+  const st = TBL[scope];
+  st.activePreset = '';
+  resetMonthSpecific(scope);
+  st.dateFrom = document.getElementById(`rangeDateFrom-${scope}`).value || null;
+  st.dateTo   = document.getElementById(`rangeDateTo-${scope}`).value   || null;
+  st.dateFilterActive = !!(st.dateFrom || st.dateTo);
+  document.getElementById(`rangePresetLabel-${scope}`).textContent = '⚡ اختار فترة';
+  document.getElementById(`rangePresetBtn-${scope}`).classList.toggle('has-preset', st.dateFilterActive);
+  document.querySelectorAll(`#rangePresetMenu-${scope} .range-preset-item`).forEach(el => el.classList.remove('active'));
+  clearTimeout(rangeDebounce[scope]);
+  rangeDebounce[scope] = setTimeout(() => onRangeApplied(scope), 400);
+}
+
+// الحالة المحايدة الوحيدة — بلا فلتر تاريخ خالص (مش "اليوم")
+function resetDateFilter(scope) {
+  const st = TBL[scope];
+  st.activePreset = ''; st.dateFrom = null; st.dateTo = null; st.dateFilterActive = false;
+  document.getElementById(`rangeDateFrom-${scope}`).value = '';
+  document.getElementById(`rangeDateTo-${scope}`).value   = '';
+  document.getElementById(`rangePresetLabel-${scope}`).textContent = '⚡ اختار فترة';
+  document.getElementById(`rangePresetBtn-${scope}`).classList.remove('has-preset');
+  document.querySelectorAll(`#rangePresetMenu-${scope} .range-preset-item`).forEach(el => el.classList.remove('active'));
+  resetMonthSpecific(scope);
+}
+function clearRangePreset(scope) {
+  resetDateFilter(scope);
+  document.getElementById(`rangePresetMenu-${scope}`).classList.remove('open');
+  onRangeApplied(scope);
+}
+
+// "شهر محدد" — السنة الحالية + آخر سنتين + "سنة تانية..." للإدخال اليدوي
+function ensureRangeYearOptions(scope) {
+  const sel = document.getElementById(`monthSelectYear-${scope}`);
+  if (!sel || sel.options.length) return;
+  const y = cairoNow().getUTCFullYear();
+  sel.innerHTML = '<option value="">السنة</option>'
+    + [y, y-1, y-2].map(v => `<option value="${v}">${v}</option>`).join('')
+    + '<option value="__other">سنة تانية...</option>';
+}
+function resetMonthSpecific(scope) {
+  const mSel = document.getElementById(`monthSelectMonth-${scope}`);
+  const ySel = document.getElementById(`monthSelectYear-${scope}`);
+  const yMan = document.getElementById(`monthSelectYearManual-${scope}`);
+  if (mSel) { mSel.value = ''; mSel.classList.remove('filled'); }
+  if (ySel) { ySel.value = ''; ySel.classList.remove('filled'); }
+  if (yMan) { yMan.value = ''; yMan.style.display = 'none'; }
+}
+function toggleMonthSubmenu(e, scope) {
+  e.stopPropagation();
+  ensureRangeYearOptions(scope);
+  const sub = document.getElementById(`monthSubmenu-${scope}`), item = document.getElementById(`monthSpecificItem-${scope}`);
+  const isOpen = sub.classList.contains('open');
+  sub.classList.toggle('open', !isOpen); item.classList.toggle('open', !isOpen);
+}
+function closeMonthSubmenu(scope) {
+  document.getElementById(`monthSubmenu-${scope}`)?.classList.remove('open');
+  document.getElementById(`monthSpecificItem-${scope}`)?.classList.remove('open');
+}
+function onYearSelectChange(scope) {
+  const sel = document.getElementById(`monthSelectYear-${scope}`), manual = document.getElementById(`monthSelectYearManual-${scope}`);
+  if (sel.value === '__other') { manual.style.display = 'block'; manual.value = ''; sel.classList.remove('filled'); manual.focus(); }
+  else { manual.style.display = 'none'; manual.value = ''; onMonthYearChange(scope); }
+}
+function onMonthYearChange(scope) {
+  const monthSel = document.getElementById(`monthSelectMonth-${scope}`);
+  const yearSel  = document.getElementById(`monthSelectYear-${scope}`);
+  const manual   = document.getElementById(`monthSelectYearManual-${scope}`);
+  const month = monthSel.value;
+  const year  = yearSel.value === '__other' ? manual.value.trim() : yearSel.value;
+  monthSel.classList.toggle('filled', !!month);
+  yearSel.classList.toggle('filled', !!yearSel.value && yearSel.value !== '__other');
+  if (!month || !year || String(year).length !== 4 || isNaN(Number(year))) return;
+  applySpecificMonth(scope, Number(year), Number(month));
+}
+function applySpecificMonth(scope, year, month) {
+  const st = TBL[scope];
+  const from = `${year}-${pad2(month)}-01`;
+  const to   = `${year}-${pad2(month)}-${pad2(new Date(Date.UTC(year, month, 0)).getUTCDate())}`;
+  st.activePreset = 'specificMonth';
+  st.dateFrom = from; st.dateTo = to; st.dateFilterActive = true;
+  document.getElementById(`rangeDateFrom-${scope}`).value = from;
+  document.getElementById(`rangeDateTo-${scope}`).value   = to;
+  document.querySelectorAll(`#rangePresetMenu-${scope} .range-preset-item`).forEach(el => el.classList.toggle('active', el.id === `monthSpecificItem-${scope}`));
+  document.getElementById(`rangePresetLabel-${scope}`).textContent = `📅 ${RANGE_MONTH_NAMES[month]} ${year}`;
+  document.getElementById(`rangePresetBtn-${scope}`).classList.add('has-preset');
+  closeMonthSubmenu(scope);
+  document.getElementById(`rangePresetMenu-${scope}`).classList.remove('open');
+  onRangeApplied(scope);
+}
+
+// تاب سجل الدخول بيفلتر بالتاريخ **من السيرفر** (السجل مركزي لكل الأدوات)،
+// فتغيير الفترة عنده = إعادة تحميل. الباقي فلترة في الواجهة على المحمّل.
+function onRangeApplied(scope) {
+  if (scope === 'acc') loadAccessLog();
+  else applyFilters(scope);
+}
+
+// ─── §TABLE-JS::clearAll ───
+function clearAllFilters(scope) {
+  const st = TBL[scope];
+  st.msKeys.forEach(k => { msState[k].selected.clear(); msState[k].search = ''; 
+    const s = document.getElementById(`msSearch-${k}`); if (s) s.value = '';
+    msRenderList(k); });
+  const searchEl = document.getElementById(`searchInput-${scope}`);
+  searchEl.value = ''; st.search = ''; toggleSearchActiveState(searchEl);
+  renderChips(scope);
+  resetDateFilter(scope);
+  onRangeApplied(scope);
+}
+
+// ─── §TABLE-JS::sort — مستقل تمامًا عن الفلاتر ───
+const sortConfig = {
+  emp: { name:{type:'string'}, status:{type:'string'}, pin:{type:'string'}, admin:{type:'string'},
+         loginDate:{type:'date'}, loginTime:{type:'date'}, created:{type:'date'} },
+  acc: { date:{type:'date'}, time:{type:'date'}, emp:{type:'string'}, type:{type:'string'}, tool:{type:'string'} },
+  aud: { date:{type:'date'}, time:{type:'date'}, emp:{type:'string'}, type:{type:'string'},
+         target:{type:'string'}, result:{type:'string'} },
+};
+
+function toggleSort(scope, key) {
+  const s = TBL[scope].sort;
+  if (s.key !== key)            { s.key = key; s.dir = 'asc'; }
+  else if (s.dir === 'asc')     { s.dir = 'desc'; }
+  else                          { s.key = null; s.dir = null; }   // ضغطة تالتة = بلا ترتيب
+  updateSortHeaderUI(scope);
+  applyFilters(scope);
+}
+
+function updateSortHeaderUI(scope) {
+  const s = TBL[scope].sort;
+  const root = document.getElementById(`tblBodyWrap-${scope}`);
+  root.querySelectorAll('.sort-icon').forEach(el => {
+    const isActive = s.key === el.dataset.sortKey;
+    el.textContent = isActive ? (s.dir === 'asc' ? '▲' : '▼') : '';
+    el.classList.toggle('active', isActive);
+  });
+  root.querySelectorAll('.sortable-th').forEach(th => th.classList.toggle('sorted', th.dataset.sortKey === s.key));
+}
+
+// ⚠️ [...rows].sort() مش rows.sort() — تعديل المصفوفة الأصلية بيمنع الرجوع
+// لحالة "بلا ترتيب" (الترتيب الأصلي من السيرفر) للأبد.
+function applySort(scope, rows) {
+  const s = TBL[scope].sort;
+  if (!s.key) return rows;
+  const cfg = sortConfig[scope][s.key];
+  const dir = s.dir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const av = a[s.key], bv = b[s.key];
+    if (cfg.type === 'date') {
+      const at = av ? new Date(av).getTime() : 0, bt = bv ? new Date(bv).getTime() : 0;
+      return (at - bt) * dir;
+    }
+    return String(av ?? '').localeCompare(String(bv ?? ''), 'ar') * dir;
+  });
+}
+
+// ─── §TABLE-JS::applyFilters — client-side على البيانات المحمّلة ───
+function applyFilters(scope) {
+  updateFilterIconState(scope);
+  const st = TBL[scope];
+  const q  = st.search.trim().toLowerCase();
+
+  const filtered = st.rows.filter(r => {
+    if (q && !r._search.includes(q)) return false;
+    for (const k of st.msKeys) {
+      const sel = msState[k].selected;
+      if (sel.size && !sel.has(String(r[msFieldOf(k)] ?? ''))) return false;
+    }
+    // فلتر التاريخ في تاب سجل الدخول متطبّق على السيرفر أصلاً — بنعيد تطبيقه
+    // هنا برضه عشان النتيجة تفضل متسقة لو الصفوف اتحمّلت بفترة أوسع
+    if (st.dateFrom && r._ymd && r._ymd < st.dateFrom) return false;
+    if (st.dateTo   && r._ymd && r._ymd > st.dateTo)   return false;
+    return true;
+  });
+
+  renderTable(scope, applySort(scope, filtered));
+  document.getElementById(`filteredCount-${scope}`).textContent = filtered.length.toLocaleString('en-US');
+}
+
+// أي حقل في الصف بيقابل كل مفتاح فلتر
+const MS_FIELD = {
+  empStatus:'status', empPin:'pin', empAdmin:'admin',
+  accTool:'tool', accType:'type', accEmp:'empUser',
+  audType:'type', audTarget:'targetUser', audEmp:'empUser',
+};
+function msFieldOf(key) { return MS_FIELD[key]; }
+
+function renderTable(scope, rows) {
+  if (scope === 'emp') renderEmployeesTable(rows);
+  else if (scope === 'acc') renderAccessTable(rows);
+  else renderAuditTable(rows);
+}
+
+// ══════════════════════════════════════════════════════
+// §TOOL-JS — التابات + Freeze on Scroll
+// ══════════════════════════════════════════════════════
+const TAB_IDS  = ['employees', 'log', 'audit'];
+const TAB_BTNS = { employees: 'tabEmp', log: 'tabLog', audit: 'tabAudit' };
+const TAB_PANELS = { employees: 'panelEmployees', log: 'panelLog', audit: 'panelAudit' };
+let currentTab = 'employees';
+
+function switchMainTab(tab) {
+  currentTab = tab;
+  TAB_IDS.forEach(id => {
+    document.getElementById(TAB_BTNS[id]).classList.toggle('active', id === tab);
+    document.getElementById(TAB_PANELS[id]).classList.toggle('active', id === tab);
+  });
+  if (tab === 'log'   && !TBL.acc.loaded) loadAccessLog();
+  if (tab === 'audit' && !TBL.aud.loaded) loadAudit();
+  updateTabChip();
+  closeTabChipMenu();
+}
+
+// ── Sticky/compact toggle — عتبتان (Hysteresis) + rAF throttle ──
+// ⚠️ عتبة واحدة بدون throttle بتسبب فليكر عند نقطة القفل (باج حقيقي 30-08-2026)
+const stickyWrap = document.getElementById('stickyWrap');
+const STICK_ON  = 40;
+const STICK_OFF = 12;
+let stickyRafPending = false;
+function onPageScroll() {
+  if (stickyRafPending) return;
+  stickyRafPending = true;
+  requestAnimationFrame(() => {
+    stickyRafPending = false;
+    const y = window.scrollY;
+    const isStuck = stickyWrap.classList.contains('stuck');
+    if (!isStuck && y > STICK_ON)      stickyWrap.classList.add('stuck');
+    else if (isStuck && y < STICK_OFF) stickyWrap.classList.remove('stuck');
+  });
+}
+window.addEventListener('scroll', onPageScroll, { passive: true });
+
+function updateTabChip() {
+  document.getElementById('activeTabChipLabel').textContent =
+    document.getElementById(TAB_BTNS[currentTab]).textContent.trim();
+  document.querySelectorAll('#tabChipMenu .tab-chip-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === currentTab);
+  });
+}
+function buildTabChipMenu() {
+  document.getElementById('tabChipMenu').innerHTML = TAB_IDS.map(id => {
+    const label = document.getElementById(TAB_BTNS[id]).textContent.trim();
+    return `<div class="tab-chip-item ${id === currentTab ? 'active' : ''}" data-tab="${id}"
+      onclick="event.stopPropagation(); switchMainTab('${id}');">${label}</div>`;
+  }).join('');
+}
+function toggleTabChipMenu(e) {
+  e.stopPropagation();
+  const chip = document.getElementById('activeTabChip'), menu = document.getElementById('tabChipMenu');
+  const willOpen = !menu.classList.contains('open');
+  menu.classList.toggle('open', willOpen);
+  chip.classList.toggle('open', willOpen);
+}
+function closeTabChipMenu() {
+  document.getElementById('tabChipMenu')?.classList.remove('open');
+  document.getElementById('activeTabChip')?.classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const chip = document.getElementById('activeTabChip');
+  if (chip && !chip.contains(e.target)) closeTabChipMenu();
+});
 
 // ══════════════════════════════════════════════════════
 // §TOOL-JS::employees — إدارة الموظفين
 // ══════════════════════════════════════════════════════
 let employees = [];
+
 async function loadEmployees() {
   const btn = document.getElementById('refreshEmpBtn');
   btn.classList.add('spinning'); btn.disabled = true;
-  setEmpState('loading');
+  setTableState('emp', 8, '<span class="loading-spinner"></span>');
   try {
     const data = await apiGet('list_employees');
     employees  = data.employees || [];
-    renderEmployees();
-    document.getElementById('countBadge').textContent = employees.length.toLocaleString('en-US');
-    populateAccessLogFilters();
-    populateAuditFilters();
+
+    TBL.emp.rows = employees.map(e => ({
+      username:  e.username,
+      name:      e.display_name,
+      status:    e.is_active ? 'active' : 'inactive',
+      pin:       e.has_pin   ? 'set'    : 'notset',
+      admin:     e.is_admin  ? 'admin'  : 'normal',
+      loginDate: e.last_login || null,
+      loginTime: e.last_login || null,
+      created:   e.created_at || null,
+      _ymd:      cairoYmd(e.created_at),
+      _search:   `${e.display_name} ${e.username}`.toLowerCase(),
+      _raw:      e,
+    }));
+    TBL.emp.loaded = true;
+
+    msSetItems('empStatus', [{ value:'active', label:'✅ نشط' }, { value:'inactive', label:'⏸ موقوف' }]);
+    msSetItems('empPin',    [{ value:'set', label:'🔑 مسجّل' }, { value:'notset', label:'⚠️ غير مسجّل' }]);
+    msSetItems('empAdmin',  [{ value:'admin', label:'🛡️ Admin' }, { value:'normal', label:'بدون صلاحية' }]);
+
+    // فلاتر الموظفين في التابين التانيين بتتغذى من نفس القائمة
+    const empItems = employees.map(e => ({ value: e.username, label: e.display_name }));
+    msSetItems('accEmp', empItems);
+    msSetItems('audEmp', empItems);
+
+    applyFilters('emp');
+    renderChips('emp');
   } catch (e) {
-    setEmpState('error', e.message);
+    setTableState('emp', 8, `⚠️ ${escapeHtml(e.message)}`);
+    document.getElementById('filteredCount-emp').textContent = '—';
   } finally { btn.classList.remove('spinning'); btn.disabled = false; }
 }
 
-function setEmpState(state, msg = '') {
-  const tb = document.getElementById('tableBody');
-  const icon = state === 'loading' ? '<div class="loading-spinner"></div>' : (state === 'empty' ? '<div class="state-icon">👤</div>' : '<div class="state-icon">⚠️</div>');
-  const text = state === 'loading' ? 'جاري التحميل...' : (state === 'empty' ? 'لا يوجد موظفون' : msg);
-  tb.innerHTML = `<tr><td colspan="7"><div class="state-box">${icon}<div class="state-text" style="margin-top:8px;">${text}</div></div></td></tr>`;
+function setTableState(scope, colspan, html) {
+  document.getElementById(`tblBody-${scope}`).innerHTML =
+    `<tr class="empty-row"><td colspan="${colspan}">${html}</td></tr>`;
 }
 
-function renderEmployees() {
-  if (!employees.length) { setEmpState('empty'); return; }
-  document.getElementById('tableBody').innerHTML = employees.map(emp => {
-    const toggleBtn = emp.is_active
-      ? `<button class="act-btn act-disable" onclick="confirmDisable('${emp.username}','${emp.display_name}')">⏸ إيقاف</button>`
-      : `<button class="act-btn act-enable"  onclick="confirmEnable('${emp.username}','${emp.display_name}')">▶ تفعيل</button>`;
-    const adminBadge = emp.is_admin
+function renderEmployeesTable(rows) {
+  if (!rows.length) { setTableState('emp', 8, 'لا يوجد موظفون يطابقون الفلاتر'); return; }
+  document.getElementById('tblBody-emp').innerHTML = rows.map(r => {
+    const e = r._raw;
+    const u = jsQuote(e.username), d = jsQuote(e.display_name);
+    const toggleBtn = e.is_active
+      ? `<button class="row-btn act-disable" onclick="confirmDisable('${u}','${d}')">⏸ إيقاف</button>`
+      : `<button class="row-btn act-enable"  onclick="confirmEnable('${u}','${d}')">▶ تفعيل</button>`;
+    const adminBadge = e.is_admin
       ? `<span class="status-badge status-active">🛡️ Admin</span>`
-      : `<span class="status-badge status-inactive" style="background:var(--surface-2);color:var(--text-muted);">—</span>`;
-    const adminToggleBtn = emp.is_admin
-      ? `<button class="act-btn act-disable" onclick="confirmRevokeAdmin('${emp.username}','${emp.display_name}')">🛡️⊘ سحب إدارة</button>`
-      : `<button class="act-btn act-enable"  onclick="confirmGrantAdmin('${emp.username}','${emp.display_name}')">🛡️＋ منح إدارة</button>`;
+      : `<span class="status-badge status-neutral">—</span>`;
+    const adminToggleBtn = e.is_admin
+      ? `<button class="row-btn act-disable" onclick="confirmRevokeAdmin('${u}','${d}')">🛡️⊘ سحب إدارة</button>`
+      : `<button class="row-btn act-enable"  onclick="confirmGrantAdmin('${u}','${d}')">🛡️＋ منح إدارة</button>`;
     return `<tr>
-      <td><div class="emp-name">${emp.display_name}</div><div class="emp-username">${emp.username}</div></td>
-      <td style="text-align:center;"><span class="status-badge ${emp.is_active ? 'status-active' : 'status-inactive'}">${emp.is_active ? '✅ نشط' : '⏸ موقوف'}</span></td>
-      <td style="text-align:center;"><span class="pin-badge ${emp.has_pin ? 'pin-set' : 'pin-notset'}">${emp.has_pin ? '🔑 مسجّل' : '⚠️ غير مسجّل'}</span></td>
-      <td style="text-align:center;">${adminBadge}</td>
-      <td>${emp.last_login ? `<span class="date-text">${formatDateTime(emp.last_login)}</span>` : '<span class="never-text">لم يدخل بعد</span>'}</td>
-      <td><span class="date-text">${formatDate(emp.created_at)}</span></td>
+      <td style="text-align:right;"><div class="emp-name">${escapeHtml(e.display_name)}</div><div class="emp-username">${escapeHtml(e.username)}</div></td>
+      <td><span class="status-badge ${e.is_active ? 'status-active' : 'status-inactive'}">${e.is_active ? '✅ نشط' : '⏸ موقوف'}</span></td>
+      <td><span class="pin-badge ${e.has_pin ? 'pin-set' : 'pin-notset'}">${e.has_pin ? '🔑 مسجّل' : '⚠️ غير مسجّل'}</span></td>
+      <td>${adminBadge}</td>
+      <td class="col-num">${e.last_login ? formatDate(e.last_login) : '<span class="never-text">لم يدخل بعد</span>'}</td>
+      <td class="col-num">${e.last_login ? formatTimeOnly(e.last_login) : '—'}</td>
+      <td class="col-num">${formatDate(e.created_at)}</td>
       <td><div class="actions-cell">
-        <button class="act-btn act-edit" onclick="openEdit('${emp.username}','${emp.display_name}')">✏️ تعديل</button>
+        <button class="row-btn act-edit" onclick="openEdit('${u}','${d}')">✏️ تعديل</button>
         ${toggleBtn}
         ${adminToggleBtn}
-        ${emp.has_pin ? `<button class="act-btn act-pin" onclick="confirmResetPin('${emp.username}','${emp.display_name}')">🔄 مسح PIN</button>` : ''}
-        <button class="act-btn act-delete" onclick="confirmDelete('${emp.username}','${emp.display_name}')">🗑 حذف</button>
+        ${e.has_pin ? `<button class="row-btn act-pin" onclick="confirmResetPin('${u}','${d}')">🔄 مسح PIN</button>` : ''}
+        <button class="row-btn act-delete" onclick="confirmDelete('${u}','${d}')">🗑 حذف</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1251,14 +2405,15 @@ function renderEmployees() {
 function openAddModal() {
   document.getElementById('addDisplayName').value = '';
   document.getElementById('addUsername').value    = '';
-  document.getElementById('addIsAdmin').checked    = false;
+  document.getElementById('addIsAdmin').checked   = false;
   document.getElementById('addError').classList.remove('visible');
   openOverlay('addOverlay');
   setTimeout(() => document.getElementById('addDisplayName').focus(), 150);
 }
 function autoFillUsername() {
   const display = document.getElementById('addDisplayName').value.trim();
-  document.getElementById('addUsername').value = display.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_').replace(/[^a-zA-Z0-9_]/g, '');
+  document.getElementById('addUsername').value = display.split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 async function doAdd() {
   const displayName = document.getElementById('addDisplayName').value.trim();
@@ -1270,9 +2425,9 @@ async function doAdd() {
   btn.disabled = true; btn.textContent = '⏳ جاري الإضافة...';
   const isAdmin = document.getElementById('addIsAdmin').checked;
   try {
-    await apiPost('add_employee', { username, display_name: displayName, is_admin: isAdmin, actor: currentEmployee?.username || null });
+    const res = await apiPost('add_employee', { username, display_name: displayName, is_admin: isAdmin, actor: currentEmployee?.username || null });
     closeOverlay('addOverlay');
-    showToast(`تمت إضافة ${displayName} ✓`, 'success');
+    presentActionResult(res, `تمت إضافة ${displayName}`);
     loadEmployees();
   } catch (e) { errEl.textContent = e.message; errEl.classList.add('visible'); }
   finally { btn.disabled = false; btn.textContent = 'إضافة'; }
@@ -1291,15 +2446,18 @@ async function doEdit() {
   const errEl = document.getElementById('editError');
   if (!displayName) { errEl.textContent = 'الرجاء إدخال الاسم'; errEl.classList.add('visible'); return; }
   try {
-    await apiPost('update_display_name', { username, display_name: displayName, actor: currentEmployee?.username || null });
-    closeOverlay('editOverlay'); showToast('تم تحديث الاسم ✓', 'success'); loadEmployees();
+    const res = await apiPost('update_display_name', { username, display_name: displayName, actor: currentEmployee?.username || null });
+    closeOverlay('editOverlay');
+    presentActionResult(res, 'تم تحديث الاسم');
+    loadEmployees();
   } catch (e) { errEl.textContent = e.message; errEl.classList.add('visible'); }
 }
 
+// ⚠️ زرار التأكيد بيتنسخ ويتربط من جديد كل مرة — بدل متغيّر pendingAction مشترك
 function openConfirm(header, bodyHTML, onConfirm, isDanger = true) {
   document.getElementById('confirmHeader').textContent = header;
   document.getElementById('confirmBody').innerHTML = bodyHTML;
-  const okBtn = document.getElementById('confirmOkBtn');
+  const okBtn  = document.getElementById('confirmOkBtn');
   const newBtn = okBtn.cloneNode(true);
   okBtn.parentNode.replaceChild(newBtn, okBtn);
   newBtn.className = isDanger ? 'btn-danger' : 'btn-primary';
@@ -1308,8 +2466,8 @@ function openConfirm(header, bodyHTML, onConfirm, isDanger = true) {
   openOverlay('confirmOverlay');
 }
 function confirmRow(username, displayName) {
-  return `<div class="confirm-detail"><span class="confirm-label">الموظف</span><span class="confirm-val">${displayName}</span></div>
-          <div class="confirm-detail"><span class="confirm-label">Username</span><span class="confirm-val" style="font-family:var(--font-mono);font-size:12px;">${username}</span></div>`;
+  return `<div class="confirm-detail"><span class="confirm-label">الموظف</span><span class="confirm-val">${escapeHtml(displayName)}</span></div>
+          <div class="confirm-detail"><span class="confirm-label">Username</span><span class="confirm-val" style="font-family:var(--font-mono);font-size:12px;direction:ltr;">${escapeHtml(username)}</span></div>`;
 }
 function confirmDisable(u, d) {
   openConfirm('⏸ إيقاف موظف', confirmRow(u,d) + `<div class="confirm-warning" style="background:var(--amber-light);border-color:var(--amber-border);color:var(--amber);">سيُمنع فوراً من الدخول لأي أداة — قابل للعكس.</div>`,
@@ -1337,199 +2495,277 @@ function confirmRevokeAdmin(u, d) {
   openConfirm('🛡️⊘ سحب صلاحية إدارة', confirmRow(u,d) + '<div class="confirm-warning">لن يقدر بعدها يسجّل دخول على هذه الأداة.</div>',
     () => doAction('revoke_admin', u, `تم سحب صلاحية الإدارة من ${d}`));
 }
+
+// ⚠️ تلات حالات مش اتنين — الحالة جاية من السيرفر كما هي (Step 3C)
+function presentActionResult(res, successMsg) {
+  const status = res.status || (res.ok ? 'success' : 'error');
+  if (status === 'warning' || res.logged === false) {
+    showToast(`${successMsg} — لكن العملية ما اتسجّلتش في السجل${res.logError ? ` (${res.logError})` : ''}`, 'warning', 7000);
+    playBeep('warn');
+  } else {
+    showToast(`${successMsg} ✓`, 'success');
+  }
+}
+
 async function doAction(action, username, successMsg) {
   try {
-    await apiPost(action, { username, actor: currentEmployee?.username || null });
-    showToast(successMsg + ' ✓', 'success'); loadEmployees();
-  } catch (e) { showToast(e.message, 'error'); }
+    const res = await apiPost(action, { username, actor: currentEmployee?.username || null });
+    presentActionResult(res, successMsg);
+    loadEmployees();
+  } catch (e) { showToast(e.message, 'error', 6000); }
 }
 
 // ══════════════════════════════════════════════════════
 // §LOG-JS — سجل الدخول والخروج (عبر كل الأدوات)
 // ══════════════════════════════════════════════════════
-function populateAccessLogFilters() {
-  const sel = document.getElementById('logFilterEmployee');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">الكل</option>' +
-    employees.map(e => `<option value="${e.username}">${e.display_name}</option>`).join('');
-  sel.value = current;
-}
+// ⚠️ فلترة هجينة مقصودة: نطاق التاريخ + السقف من السيرفر (السجل مركزي لكل
+// الستاك وممكن يكبر جدًا)، وباقي الفلاتر والعدّ والترتيب في الواجهة على
+// المحمّل فعليًا. لو وصلنا السقف بيظهر بانر بيطلب تضييق الفترة.
+const ACC_LIMIT = 1000;
+const TYPE_LABELS_ACCESS = { login: '🟢 دخول', logout: '⚪ خروج' };
 
-let logDebounce = null;
-async function loadLog() {
-  clearTimeout(logDebounce);
-  logDebounce = setTimeout(async () => {
-    const btn = document.getElementById('refreshLogBtn');
-    btn.classList.add('spinning');
-    const card = document.getElementById('logCard');
-    card.innerHTML = '<div class="log-empty"><div class="loading-spinner"></div><p style="margin-top:10px;font-size:12px;color:var(--text-muted);">جاري التحميل...</p></div>';
-
-    const params = {
-      employee:  document.getElementById('logFilterEmployee').value,
-      tool:      document.getElementById('logFilterTool').value,
-      type:      document.getElementById('logFilterType').value,
-      date_from: document.getElementById('logDateFrom').value,
-      date_to:   document.getElementById('logDateTo').value,
-      limit:     '300',
-    };
-
-    try {
-      const data = await apiGet('get_access_log', params);
-      renderLog(data.entries || [], data.total || 0);
-    } catch (e) {
-      card.innerHTML = `<div class="log-empty"><div class="log-empty-icon">⚠️</div>${e.message}</div>`;
-    } finally { btn.classList.remove('spinning'); }
-  }, 200);
-}
-
-function renderLog(entries, total) {
-  const card = document.getElementById('logCard');
-  if (!entries.length) {
-    card.innerHTML = '<div class="log-empty"><div class="log-empty-icon">📭</div>لا توجد سجلات تطابق الفلاتر</div>';
-    return;
-  }
-  const rows = entries.map(e => {
-    const isLogin  = e.type === 'login';
-    const empName  = e.employee ? e.employee.replace(/_/g, ' ') : '—';
-    return `<div class="log-entry">
-      <div class="log-dot ${isLogin ? 'dot-login' : 'dot-logout'}"></div>
-      <div class="log-content">
-        <div class="log-top">
-          <span class="log-emp-badge">👤 ${empName}</span>
-          <span class="log-type-badge ${isLogin ? 'type-login' : 'type-logout'}">${isLogin ? '🟢 دخول' : '⚪ خروج'}</span>
-          <span class="log-tool-badge">${e.tool}</span>
-        </div>
-        <div class="log-time">${formatDateTime(e.timestamp)}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  card.innerHTML = rows + `<div class="log-total"><span>إجمالي النتائج: ${total.toLocaleString('en-US')} — يُعرض أحدث 300</span></div>`;
-}
-
-// ══════════════════════════════════════════════════════
-// §LOG-JS::audit — سجل الإجراءات الإدارية (audit — get_logs)
-// ══════════════════════════════════════════════════════
-function populateAuditFilters() {
-  const sel = document.getElementById('auditFilterEmployee');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">الكل</option>' +
-    employees.map(e => `<option value="${e.username}">${e.display_name}</option>`).join('');
-  sel.value = current;
-}
-
-let auditDebounce = null;
-function debounceAudit() {
-  clearTimeout(auditDebounce);
-  auditDebounce = setTimeout(() => loadAudit(0), 300);
-}
-
-let auditOffset = 0;
-const AUDIT_PAGE_SIZE = 100;
-async function loadAudit(offset = 0) {
-  auditOffset = offset;
-  const btn = document.getElementById('refreshAuditBtn');
-  btn.classList.add('spinning');
-  const card = document.getElementById('auditCard');
-  card.innerHTML = '<div class="log-empty"><div class="loading-spinner"></div><p style="margin-top:10px;font-size:12px;color:var(--text-muted);">جاري التحميل...</p></div>';
-
-  const params = {
-    employee: document.getElementById('auditFilterEmployee').value,
-    search:   document.getElementById('auditSearch').value.trim(),
-    limit:    String(AUDIT_PAGE_SIZE),
-    offset:   String(offset),
-  };
+async function loadAccessLog() {
+  const btn = document.getElementById('refreshLogBtn');
+  btn.classList.add('spinning'); btn.disabled = true;
+  setTableState('acc', 6, '<span class="loading-spinner"></span>');
+  const banner = document.getElementById('accCapBanner');
+  banner.classList.remove('visible');
 
   try {
-    const [logsData, countData] = await Promise.all([
-      apiGet('get_logs', params),
-      apiGet('get_logs_count', params),
-    ]);
-    renderAudit(logsData.entries || [], countData.total || 0, offset);
+    const st = TBL.acc;
+    const data = await apiGet('get_access_log', {
+      date_from: st.dateFrom || '',
+      date_to:   st.dateTo   || '',
+      limit:     String(ACC_LIMIT),
+    });
+    const entries = data.entries || [];
+
+    st.rows = entries.map(e => ({
+      date:     e.timestamp,
+      time:     e.timestamp,
+      emp:      e.employee ? e.employee.replace(/_/g, ' ') : '—',
+      empUser:  e.employee || '',
+      type:     e.type,
+      tool:     e.tool,
+      notes:    e.notes || '',
+      _ymd:     cairoYmd(e.timestamp),
+      _search:  `${e.employee || ''} ${e.tool || ''} ${e.notes || ''}`.toLowerCase(),
+    }));
+    st.loaded = true;
+
+    // قوايم الفلاتر بتتبني من الداتا المحمّلة نفسها — مش استعلام إضافي
+    msSetItems('accTool', [...new Set(st.rows.map(r => r.tool))].sort()
+      .map(t => ({ value: t, label: t, mono: true })));
+    msSetItems('accType', [...new Set(st.rows.map(r => r.type))].sort()
+      .map(t => ({ value: t, label: TYPE_LABELS_ACCESS[t] || t })));
+
+    if ((data.total || 0) > entries.length) {
+      banner.textContent = `⚠️ السجل فيه ${(data.total).toLocaleString('en-US')} صف مطابق، ومعروض منهم أحدث ${entries.length.toLocaleString('en-US')} — ضيّق الفترة عشان تشوف الباقي.`;
+      banner.classList.add('visible');
+    }
+
+    applyFilters('acc');
+    renderChips('acc');
   } catch (e) {
-    card.innerHTML = `<div class="log-empty"><div class="log-empty-icon">⚠️</div>${e.message}</div>`;
-  } finally { btn.classList.remove('spinning'); }
+    setTableState('acc', 6, `⚠️ ${escapeHtml(e.message)}`);
+    document.getElementById('filteredCount-acc').textContent = '—';
+  } finally { btn.classList.remove('spinning'); btn.disabled = false; }
 }
 
+function renderAccessTable(rows) {
+  if (!rows.length) { setTableState('acc', 6, 'لا توجد سجلات تطابق الفلاتر'); return; }
+  document.getElementById('tblBody-acc').innerHTML = rows.map(r => `<tr>
+    <td class="col-num">${formatDate(r.date)}</td>
+    <td class="col-num">${formatTimeOnly(r.time)}</td>
+    <td><span class="log-emp-badge">👤 ${escapeHtml(r.emp)}</span></td>
+    <td><span class="log-type-badge ${r.type === 'login' ? 'type-login' : 'type-logout'}">${TYPE_LABELS_ACCESS[r.type] || escapeHtml(r.type)}</span></td>
+    <td><span class="log-tool-badge">${escapeHtml(r.tool)}</span></td>
+    <td class="cell-notes">${escapeHtml(r.notes) || '—'}</td>
+  </tr>`).join('');
+}
+
+async function exportAccessLogXLSX() {
+  const rows = currentFilteredRows('acc');
+  if (!rows.length) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
+  await exportXLSX('سجل الدخول والخروج', 'سجل_الدخول_والخروج', [
+    { header: 'التاريخ', key: 'd',  width: 14 },
+    { header: 'الوقت',   key: 't',  width: 14 },
+    { header: 'الموظف',  key: 'e',  width: 22 },
+    { header: 'النوع',   key: 'ty', width: 12 },
+    { header: 'الأداة',  key: 'tl', width: 26 },
+    { header: 'التفاصيل',key: 'n',  width: 48 },
+  ], rows.map(r => ({
+    d: formatDateForExport(r.date), t: formatTimeForExport(r.time),
+    e: r.emp, ty: r.type === 'login' ? 'دخول' : 'خروج', tl: r.tool, n: r.notes,
+  })));
+}
+
+// ══════════════════════════════════════════════════════
+// §LOG-JS::audit — سجل الإجراءات الإدارية
+// ══════════════════════════════════════════════════════
+// ⚠️ بيحمّل السجل كامل عبر get_logs_export (سقف 2000) عشان الفلترة والعدّ
+// والترتيب يبقوا على السجل كله. حجم السجل هنا صغير جدًا (إجراءات إدارية
+// نادرة)، والتقسيم لصفحات كان بيخلّي العدّ والفلترة على صفحة واحدة بس.
 const ACTION_LABELS = {
-  add_employee:         '➕ إضافة موظف',
-  update_display_name:  '✏️ تعديل اسم',
-  disable_employee:     '⏸ إيقاف',
-  enable_employee:      '▶ تفعيل',
-  reset_pin:            '🔄 مسح PIN',
-  delete_employee:      '🗑 حذف نهائي',
-  grant_admin:          '🛡️＋ منح صلاحية إدارة',
-  revoke_admin:         '🛡️⊘ سحب صلاحية إدارة',
+  add_employee:        '➕ إضافة موظف',
+  update_display_name: '✏️ تعديل اسم',
+  disable_employee:    '⏸ إيقاف',
+  enable_employee:     '▶ تفعيل',
+  reset_pin:           '🔄 مسح PIN',
+  delete_employee:     '🗑 حذف نهائي',
+  grant_admin:         '🛡️＋ منح صلاحية إدارة',
+  revoke_admin:        '🛡️⊘ سحب صلاحية إدارة',
 };
+const AUD_LIMIT = 2000;
 
-function renderAudit(entries, total, offset) {
-  const card = document.getElementById('auditCard');
-  if (!entries.length) {
-    card.innerHTML = '<div class="log-empty"><div class="log-empty-icon">📭</div>لا توجد سجلات تطابق الفلاتر</div>';
-    return;
-  }
-  const rows = entries.map(e => {
-    const label   = ACTION_LABELS[e.type] || e.type;
-    const empName = e.employee ? e.employee.replace(/_/g, ' ') : 'غير معروف';
-    return `<div class="log-entry">
-      <div class="log-dot dot-action"></div>
-      <div class="log-content">
-        <div class="log-top">
-          <span class="log-emp-badge">👤 ${empName}</span>
-          <span class="log-type-badge type-action">${label}</span>
-        </div>
-        <div class="log-notes">${e.notes || ''}</div>
-        <div class="log-time">${formatDateTime(e.timestamp)}</div>
-      </div>
-    </div>`;
-  }).join('');
+function parseExtra(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw) || {}; } catch { return {}; }
+}
 
-  const page      = Math.floor(offset / AUDIT_PAGE_SIZE) + 1;
-  const pageCount = Math.max(1, Math.ceil(total / AUDIT_PAGE_SIZE));
+async function loadAudit() {
+  const btn = document.getElementById('refreshAuditBtn');
+  btn.classList.add('spinning'); btn.disabled = true;
+  setTableState('aud', 7, '<span class="loading-spinner"></span>');
+  const banner = document.getElementById('audCapBanner');
+  banner.classList.remove('visible');
 
-  card.innerHTML = rows + `
-    <div class="log-total">
-      <span>إجمالي النتائج: ${total.toLocaleString('en-US')} — صفحة ${page.toLocaleString('en-US')} من ${pageCount.toLocaleString('en-US')}</span>
-      <div class="pager">
-        <button ${offset === 0 ? 'disabled' : ''} onclick="loadAudit(${Math.max(0, offset - AUDIT_PAGE_SIZE)})">السابق</button>
-        <button ${offset + AUDIT_PAGE_SIZE >= total ? 'disabled' : ''} onclick="loadAudit(${offset + AUDIT_PAGE_SIZE})">التالي</button>
-      </div>
-    </div>`;
+  try {
+    const data = await apiGet('get_logs_export', { tool: TOOL_NAME });
+    const entries = data.entries || [];
+
+    TBL.aud.rows = entries.map(e => {
+      const extra = parseExtra(e.extra);
+      const target = extra.targetDisplayName || extra.targetUsername || '';
+      return {
+        date:       e.timestamp,
+        time:       e.timestamp,
+        emp:        e.employee ? e.employee.replace(/_/g, ' ') : 'غير معروف',
+        empUser:    e.employee || '',
+        type:       e.type,
+        target:     target ? String(target).replace(/_/g, ' ') : '—',
+        targetUser: extra.targetUsername || '',
+        result:     extra.result || '',
+        notes:      e.notes || '',
+        _ymd:       cairoYmd(e.timestamp),
+        _search:    `${e.employee || ''} ${e.notes || ''} ${target}`.toLowerCase(),
+      };
+    });
+    TBL.aud.loaded = true;
+
+    msSetItems('audType', [...new Set(TBL.aud.rows.map(r => r.type))].sort()
+      .map(t => ({ value: t, label: ACTION_LABELS[t] || t })));
+    msSetItems('audTarget', [...new Set(TBL.aud.rows.map(r => r.targetUser).filter(Boolean))].sort()
+      .map(u => ({ value: u, label: u.replace(/_/g, ' ') })));
+
+    if (entries.length >= AUD_LIMIT) {
+      banner.textContent = `⚠️ وصلنا سقف ${AUD_LIMIT.toLocaleString('en-US')} صف — السجل أطول من كده والأقدم مش معروض.`;
+      banner.classList.add('visible');
+    }
+
+    applyFilters('aud');
+    renderChips('aud');
+  } catch (e) {
+    setTableState('aud', 7, `⚠️ ${escapeHtml(e.message)}`);
+    document.getElementById('filteredCount-aud').textContent = '—';
+  } finally { btn.classList.remove('spinning'); btn.disabled = false; }
+}
+
+// عمود "النتيجة" — صف قديم من غير extra.result بيتعرض "—" مش "✓"،
+// لأننا فعليًا مش عارفين إن كان الفعل اتأكد وقتها (Step 3C).
+function resultBadge(result) {
+  if (result === 'success') return '<span class="badge-success">✓ تم</span>';
+  if (result === 'warning') return '<span class="badge-warn">⚠ تم جزئيًا</span>';
+  if (result === 'error')   return '<span class="badge-danger">✗ فشل</span>';
+  return '<span class="badge-unknown">—</span>';
+}
+
+function renderAuditTable(rows) {
+  if (!rows.length) { setTableState('aud', 7, 'لا توجد سجلات تطابق الفلاتر'); return; }
+  document.getElementById('tblBody-aud').innerHTML = rows.map(r => `<tr>
+    <td class="col-num">${formatDate(r.date)}</td>
+    <td class="col-num">${formatTimeOnly(r.time)}</td>
+    <td><span class="log-emp-badge">👤 ${escapeHtml(r.emp)}</span></td>
+    <td><span class="log-type-badge type-action">${escapeHtml(ACTION_LABELS[r.type] || r.type)}</span></td>
+    <td>${escapeHtml(r.target)}</td>
+    <td>${resultBadge(r.result)}</td>
+    <td class="cell-notes">${escapeHtml(r.notes) || '—'}</td>
+  </tr>`).join('');
 }
 
 async function exportAuditXLSX() {
+  const rows = currentFilteredRows('aud');
+  if (!rows.length) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
+  await exportXLSX('سجل الإجراءات', 'سجل_الإجراءات_الإدارية', [
+    { header: 'التاريخ',           key: 'd',  width: 14 },
+    { header: 'الوقت',             key: 't',  width: 14 },
+    { header: 'الموظف (الفاعل)',   key: 'e',  width: 22 },
+    { header: 'الإجراء',           key: 'ty', width: 22 },
+    { header: 'الموظف المستهدف',   key: 'tg', width: 22 },
+    { header: 'النتيجة',           key: 'rs', width: 12 },
+    { header: 'التفاصيل',          key: 'n',  width: 50 },
+  ], rows.map(r => ({
+    d: formatDateForExport(r.date), t: formatTimeForExport(r.time), e: r.emp,
+    ty: (ACTION_LABELS[r.type] || r.type).replace(/[^\p{L}\p{N} ]/gu, '').trim(),
+    tg: r.target, rs: r.result === 'success' ? 'تم' : (r.result === 'warning' ? 'تم جزئيًا' : (r.result === 'error' ? 'فشل' : '—')),
+    n: r.notes,
+  })));
+}
+
+async function exportEmployeesXLSX() {
+  const rows = currentFilteredRows('emp');
+  if (!rows.length) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
+  await exportXLSX('الموظفون', 'الموظفون', [
+    { header: 'الاسم',           key: 'n',  width: 24 },
+    { header: 'Username',        key: 'u',  width: 22 },
+    { header: 'الحالة',          key: 's',  width: 12 },
+    { header: 'PIN',             key: 'p',  width: 14 },
+    { header: 'صلاحية الإدارة',  key: 'a',  width: 16 },
+    { header: 'تاريخ آخر دخول', key: 'ld', width: 14 },
+    { header: 'وقت آخر دخول',   key: 'lt', width: 14 },
+    { header: 'تاريخ الإضافة',  key: 'c',  width: 14 },
+  ], rows.map(r => ({
+    n: r.name, u: r.username,
+    s: r.status === 'active' ? 'نشط' : 'موقوف',
+    p: r.pin === 'set' ? 'مسجّل' : 'غير مسجّل',
+    a: r.admin === 'admin' ? 'Admin' : '—',
+    ld: r.loginDate ? formatDateForExport(r.loginDate) : '',
+    lt: r.loginTime ? formatTimeForExport(r.loginTime) : '',
+    c: formatDateForExport(r.created),
+  })));
+}
+
+// التصدير بيصدّر **الصفوف المعروضة حاليًا** (بعد الفلاتر والترتيب)
+function currentFilteredRows(scope) {
+  const st = TBL[scope];
+  const q  = st.search.trim().toLowerCase();
+  const filtered = st.rows.filter(r => {
+    if (q && !r._search.includes(q)) return false;
+    for (const k of st.msKeys) {
+      const sel = msState[k].selected;
+      if (sel.size && !sel.has(String(r[msFieldOf(k)] ?? ''))) return false;
+    }
+    if (st.dateFrom && r._ymd && r._ymd < st.dateFrom) return false;
+    if (st.dateTo   && r._ymd && r._ymd > st.dateTo)   return false;
+    return true;
+  });
+  return applySort(scope, filtered);
+}
+
+// ExcelJS 4.3.0 — ممنوع SheetJS للكتابة
+async function exportXLSX(sheetName, filePrefix, columns, rows) {
   try {
-    const params = {
-      employee: document.getElementById('auditFilterEmployee').value,
-      search:   document.getElementById('auditSearch').value.trim(),
-    };
-    const data = await apiGet('get_logs_export', params);
-    const entries = data.entries || [];
-    if (!entries.length) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
-
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('سجل الإجراءات');
-    ws.columns = [
-      { header: 'التاريخ والوقت', key: 'timestamp', width: 26 },
-      { header: 'الإجراء',        key: 'type',      width: 20 },
-      { header: 'الموظف',         key: 'employee',  width: 20 },
-      { header: 'التفاصيل',       key: 'notes',      width: 50 },
-    ];
+    const ws = wb.addWorksheet(sheetName, { views: [{ rightToLeft: true }] });
+    ws.columns = columns;
     ws.getRow(1).font = { bold: true };
-    entries.forEach(e => {
-      ws.addRow({
-        timestamp: formatDateTime(e.timestamp),
-        type:      ACTION_LABELS[e.type] || e.type,
-        employee:  e.employee ? e.employee.replace(/_/g, ' ') : '—',
-        notes:     e.notes || '',
-      });
-    });
-
-    const buf = await wb.xlsx.writeBuffer();
+    rows.forEach(r => ws.addRow(r));
+    const buf  = await wb.xlsx.writeBuffer();
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `سجل_الإجراءات_الإدارية_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.download = `${filePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     a.click();
     URL.revokeObjectURL(a.href);
     showToast('تم التصدير ✓', 'success');
@@ -1541,9 +2777,20 @@ async function exportAuditXLSX() {
 // ══════════════════════════════════════════════════════
 // Init
 // ══════════════════════════════════════════════════════
+['emp', 'acc', 'aud'].forEach(scope => {
+  document.getElementById(`rangePresetMenu-${scope}`).innerHTML = presetMenuHTML(scope);
+  resetDateFilter(scope);                 // بلا فلتر تاريخ افتراضي خالص
+  TBL[scope].msKeys.forEach(k => msRenderList(k));
+  updateFilterIconState(scope);
+  updateSortHeaderUI(scope);
+});
+renderVersionUI();
+buildTabChipMenu();
+updateTabChip();
 updateSettingsBtn();
-updateLoginSettingsBtnState();
+updateLoginSettingsBtn();
 loadEmployeesList();
+checkWorkerVersion();
 </script>
 </body>
 </html>
