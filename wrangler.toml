@@ -11,6 +11,6 @@ binding       = "DB"
 database_name = "ecommoda-dev-logs"
 database_id   = "90db62d3-bd7e-4d92-912b-10fc78eeb565"
 
-# لا توجد [vars] لهذه الأداة.
+# لا توجد [vars] لهذه الأداة..
 # الكود بيستخدم متغيّرين بس: env.DB (binding فوق) و env.WORKER_SECRET (سر — الداشبورد).
 # ⚠️ متضيفش SHOP_DOMAIN ولا LOCATION_ID هنا — الأداة دي مالهاش أي تعامل مع Shopify.
