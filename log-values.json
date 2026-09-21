@@ -1,0 +1,56 @@
+{
+  "tool": "employees_admin",
+  "since": null,
+  "types": {
+    "login": {
+      "result": null,
+      "stage": null,
+      "desc": "دخول موظف"
+    },
+    "logout": {
+      "result": null,
+      "stage": null,
+      "desc": "خروج موظف"
+    },
+    "add_employee": {
+      "result": "success",
+      "stage": null,
+      "desc": "إضافة موظف جديد"
+    },
+    "delete_employee": {
+      "result": "success",
+      "stage": null,
+      "desc": "حذف موظف نهائيًا"
+    },
+    "disable_employee": {
+      "result": "success",
+      "stage": null,
+      "desc": "إيقاف موظف"
+    },
+    "enable_employee": {
+      "result": "success",
+      "stage": null,
+      "desc": "تفعيل موظف"
+    },
+    "grant_admin": {
+      "result": "success",
+      "stage": null,
+      "desc": "منح صلاحية إدارة"
+    },
+    "reset_pin": {
+      "result": "success",
+      "stage": null,
+      "desc": "مسح PIN موظف"
+    },
+    "revoke_admin": {
+      "result": "success",
+      "stage": null,
+      "desc": "سحب صلاحية إدارة"
+    },
+    "update_display_name": {
+      "result": "success",
+      "stage": null,
+      "desc": "تعديل الاسم المعروض لموظف"
+    }
+  }
+}
