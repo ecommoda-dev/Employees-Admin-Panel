@@ -34,7 +34,7 @@ Employees-Admin-Panel/
 ├── index.js        ← كود الـ Worker (Cloudflare Workers + D1)
 ├── wrangler.toml   ← الاسم + binding الـ D1
 ├── index.html      ← الواجهة (GitHub Pages)
-├── Index.html      ← صفحة تحويل فقط — بدون أي منطق
+(اتشالت Index.html — 23-09-2026، قرار أحمد. الرابط الوحيد: https://ecommoda-dev.github.io/Employees-Admin-Panel/)
 ├── CLAUDE.md       ← قواعد الأداة والمسائل المفتوحة
 ├── README.md
 └── .gitignore
