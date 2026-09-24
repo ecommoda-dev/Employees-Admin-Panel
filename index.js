@@ -25,14 +25,20 @@
 //   - offset بيتقصّ على صفر (كان parseInt خام)
 //   - تصحيح توثيقي: مرجع SETUP.txt المحذوف اتشال — المخطط في CLAUDE.md §6
 //
-// skills: worker-builder v1.1.0 · constants v1.4.1 — 01-09-2026
+// v2.2.1 — الحارس الديناميكي لقيم اللوج (الطبقة ٥ — worker-builder Step 7-ج):
+//   - LOG_REGISTRY مبني من log-values.json — الزوج (tool, type) هو المفتاح
+//   - writeLog بتعلّم extra._unregistered لأي قيمة مش مسجّلة وبتكتب الصف عادي
+//     (مفيش رفض كتابة أبدًا) + UPSERT صامت في log_value_alerts بعد الكتابة
+//   - check-log-values.mjs اتستبدل بالنسخة المصلَّحة (بتمسك type shorthand)
+//
+// skills: worker-builder v3.7.0 · constants v3.1.0 — 24-09-2026
 // ══════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════
 // §CONSTANTS
 // ══════════════════════════════════════════════════════
 const TOOL_NAME      = 'employees_admin';
-const WORKER_VERSION = 'v2.2.0';   // بيترجع من ?action=get_config — الواجهة بتقارنه بنسختها
+const WORKER_VERSION = 'v2.2.1';   // بيترجع من ?action=get_config — الواجهة بتقارنه بنسختها
 
 // أنواع إجراءات التدقيق (audit) — تُستخدم كـ type في جدول logs
 const ADMIN_ACTIONS = {
@@ -172,6 +178,13 @@ async function registerPin(db, username, pin) {
  * Only tool and type are required. All other fields optional (null if not provided).
  */
 async function writeLog(db, entry) {
+  // الحارس الديناميكي (الطبقة ٥ — §LOG-REG) — مفيش رفض كتابة أبدًا،
+  // بس نعلّم الصف ونتنبّه لو الزوج (tool, type) مش مسجّل.
+  const unregistered = !isRegisteredLogValue(entry.tool, entry.type);
+  const extra = unregistered
+    ? { ...(entry.extra || {}), _unregistered: true }
+    : entry.extra;
+
   await db.prepare(`
     INSERT INTO logs
       (timestamp, tool, type, employee, order_id, order_name,
@@ -190,8 +203,10 @@ async function writeLog(db, entry) {
     entry.valueBefore  ?? null,
     entry.valueAfter   ?? null,
     entry.notes        ?? null,
-    entry.extra ? JSON.stringify(entry.extra) : null
+    extra ? JSON.stringify(extra) : null
   ).run();
+
+  if (unregistered) await noteUnregisteredLogValues(db, [entry]);   // بعد الكتابة، مش قبلها
 }
 
 /**
@@ -267,6 +282,64 @@ async function getLogsExport(db, {
   sql += ' ORDER BY timestamp DESC LIMIT 2000';
 
   return (await db.prepare(sql).bind(...b).all()).results;
+}
+
+// ════════════════════════════════════════════════════════════
+// §LOG-REG — الحارس الديناميكي لقيم اللوج (الطبقة ٥ — worker-builder Step 7-ج)
+// ════════════════════════════════════════════════════════════
+// قطعة الأداة دي بس، مبنية من log-values.json جنبها — بتتحدّث معاه في نفس
+// الـ commit. مفيش قيم ديناميكية في الأداة دي دلوقتي (check-log-values.mjs
+// المصلَّح رجّع صفر تحذيرات) — الحارس هنا كتأمين وقت التشغيل على المستقبل.
+const LOG_REGISTRY = {
+  employees_admin: new Set([
+    'login', 'logout', 'add_employee', 'update_display_name',
+    'disable_employee', 'enable_employee', 'reset_pin', 'delete_employee',
+    'grant_admin', 'revoke_admin',
+  ]),
+};
+
+const isRegisteredLogValue = (tool, type) => !!LOG_REGISTRY[tool]?.has(type);
+
+// UPSERT على (source_tool, tool, type) — صف واحد لكل قيمة، hits بيعدّ.
+// الحدث الكامل مش بيضيع: الصف الأصلي موجود في logs وعليه _unregistered،
+// والجدول ده فهرس مش سجل تاني — عشان كده dedupe مش صف لكل حدث.
+const LOG_ALERT_SQL = `
+  INSERT INTO log_value_alerts
+    (source_tool, tool, type, first_seen, last_seen, hits,
+     worker_version, sample_order_name, sample_employee, sample_notes)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(source_tool, tool, type) DO UPDATE SET
+    last_seen         = excluded.last_seen,
+    hits              = log_value_alerts.hits + excluded.hits,
+    worker_version    = excluded.worker_version,
+    sample_order_name = excluded.sample_order_name,
+    sample_employee   = excluded.sample_employee,
+    sample_notes      = excluded.sample_notes,
+    status            = CASE WHEN log_value_alerts.status = 'ignored'
+                             THEN 'ignored' ELSE 'open' END
+`;
+
+// فشل التنبيه ممنوع يأثر على أي حاجة — try/catch صامت. بتجمّع التكرار
+// جوّه نفس الدفعة في صف واحد (hits) قبل ما تكتب.
+async function noteUnregisteredLogValues(db, entries) {
+  const byPair = new Map();
+  for (const e of entries) {
+    const key = `${e.tool}\u0000${e.type}`;
+    const acc = byPair.get(key);
+    if (acc) { acc.hits++; continue; }
+    byPair.set(key, { entry: e, hits: 1 });
+  }
+  const now = new Date().toISOString();
+  for (const { entry, hits } of byPair.values()) {
+    try {
+      await db.prepare(LOG_ALERT_SQL).bind(
+        TOOL_NAME, entry.tool ?? '(بدون tool)', entry.type ?? '(بدون type)',
+        now, now, hits, WORKER_VERSION ?? null,
+        entry.orderName ?? null, entry.employee ?? null,
+        entry.notes ? String(entry.notes).slice(0, 200) : null,
+      ).run();
+    } catch (e) { /* متعمّد: التنبيه فهرس، وفشله أهون من تعطيل الأداة */ }
+  }
 }
 
 // ══════════════════════════════════════════════════════

@@ -12,8 +12,8 @@
 | رابط الـ Worker | `https://employees-admin-panel-worker.ecommoda-dev.workers.dev` |
 | رابط الواجهة | `https://ecommoda-dev.github.io/Employees-Admin-Panel/` |
 | `tool` في D1 | `employees_admin` |
-| نسخة الـ Worker | v2.2.0 |
-| نسخة الـ HTML | v2.2.0 |
+| نسخة الـ Worker | v2.2.1 |
+| نسخة الـ HTML | v2.2.1 |
 
 > ℹ️ **نسخة الـ Worker ≠ نسخة الـ HTML معماريًا** — قطعتين منفصلتين، والاختلاف
 > بينهم طبيعي. **بس من v2.2.0 الرقمين لازم يتحرّكوا مع بعض في نفس التسليم**،
@@ -247,11 +247,18 @@ git show 3256abd:index.html > /tmp/index-2.1.2.html
 
 | المهارة | الإصدار وقت آخر تعديل |
 |---|---|
-| ecommoda-worker-builder | v1.1.0 |
+| ecommoda-worker-builder | v3.7.0 |
 | ecommoda-html-builder | v2.2.0 |
-| ecommoda-constants | v1.4.1 |
+| ecommoda-constants | v3.1.0 |
 
-آخر مطابقة: 01-09-2026 · `index.js` v2.2.0 · `index.html` v2.2.0
+آخر مطابقة: 24-09-2026 · `index.js` v2.2.1 · `index.html` v2.2.1
+
+> **تعديل 24-09-2026 (v2.2.1):** تطبيق الطبقة ٥ — الحارس الديناميكي لقيم
+> اللوج (`ecommoda-worker-builder` Step 7-ج) — `LOG_REGISTRY` جوّه
+> `writeLog` + `check-log-values.mjs` اتستبدل بالنسخة المصلَّحة اللي بتمسك
+> `{ tool, type }` shorthand. `ecommoda-html-builder` ما اتلمستش (مفيش
+> تعديل وظيفي على الواجهة) — `TOOL_VERSION` اتحرّك بس عشان يفضل مطابق
+> لرقم الـ Worker (§ فوق).
 
 > **الفرق عن البصمة السابقة (`v1.0.0` × ٣ — "ما قبل النظام"):** دي أول بصمة
 > حقيقية للأداة. الأداة اتفتحت لسبب فعلي (مراجعة كاملة على المهارات)، فاتطبّقت
@@ -263,6 +270,6 @@ git show 3256abd:index.html > /tmp/index-2.1.2.html
 > مصدر الحقيقة = الملف ده. (بصمة الـ HTML بتوصل للمنشور عادي — Pages بتخدم
 > الملف خام.)
 
-آخر تحديث: 01-09-2026 — 08:18
+آخر تحديث: 24-09-2026
 
 </div>
